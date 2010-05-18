@@ -12,6 +12,8 @@ if 1:
     while True:
         break
 
+blah()
+
 print('Hallo Welt')
 
 # A loooooooooooooooooooooooooooooooooooooooooooooong Commmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmment

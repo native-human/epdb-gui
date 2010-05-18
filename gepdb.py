@@ -197,7 +197,10 @@ class GuiPdb:
                     print 'At line: ', line[3:]
                     print
                     #break
-                elif line.startswith('(Pdb)'):
+                elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
+                    pass
+                elif line.startswith('#'):
+                    # TODO view in debug window
                     pass
                 elif line.startswith('--Return--'):
                     print 'Return'
@@ -241,7 +244,7 @@ class GuiPdb:
         print 'inserted'
 
     def __init__(self):
-        self.debuggee = pexpect.spawn("python3 -m pdb example.py", timeout=0.2)
+        self.debuggee = pexpect.spawn("python3 -m epdb example.py", timeout=0.2)
         
         self.running = True
         
@@ -404,9 +407,9 @@ class GuiPdb:
         
         self.handle_debuggee_output()
         
-        iter1 = self.textbuffer.get_iter_at_line(3)
-        iter2 = self.textbuffer.get_iter_at_line(4)
-        mark = self.textbuffer.create_mark("mark1", iter1, left_gravity=False)
+        #iter1 = self.textbuffer.get_iter_at_line(3)
+        #iter2 = self.textbuffer.get_iter_at_line(4)
+        #mark = self.textbuffer.create_mark("mark1", iter1, left_gravity=False)
 
         #self.textbuffer.create_tag("highlighted",  background = "red")
         #self.textbuffer.apply_tag_by_name("highlighted", iter1, iter2)
