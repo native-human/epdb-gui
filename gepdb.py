@@ -250,7 +250,7 @@ class GuiPdb:
         
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-    
+        self.window.set_default_size(640,480)
         # When the window is given the "delete_event" signal (this is given
         # by the window manager, usually by the "close" option, or on the
         # titlebar), we ask it to call the delete_event () function
@@ -263,7 +263,7 @@ class GuiPdb:
         # or if we return FALSE in the "delete_event" callback.
         self.window.connect("destroy", self.destroy)
     
-        self.window.set_size_request(300, -1)
+        #self.window.set_size_request(300, -1)
     
         # Sets the border width of the window.
         #self.window.set_border_width(10)
