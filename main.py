@@ -39,15 +39,21 @@ class RestartDlg(gtk.Dialog):
         self.destroy()
         
 class MessageDlg(gtk.Dialog):
-    def __init__(self, title='', message=''):
+    def __init__(self, title='', message='', action=None):
+        
         gtk.Dialog.__init__(self, title=title)
         okbutton = gtk.Button('Ok')
         textlabel = gtk.Label(message)
         self.action_area.pack_start(okbutton, True, True, 0)
-        okbutton.connect('clicked', lambda x: self.destroy())
+        if not action is None:
+            print 'Register callback'
+            okbutton.connect('clicked', action)
         self.vbox.pack_start(textlabel, True, True, 0)
+        okbutton.connect('clicked', lambda x: self.destroy())
+
         textlabel.show()
         okbutton.show()
+    
         
 
 class Toolbar(gtk.HBox):
@@ -88,12 +94,23 @@ class Toolbar(gtk.HBox):
         self.show()
 
 class GuiPdb:
-
+    ui = '''<ui>
+        <menubar name="MenuBar">
+          <menu action="File">
+            <menuitem action="Quit"/>
+          </menu>
+          <menu action="Sound">
+            <menuitem/>
+        </menu>
+        </menubar>
+        </ui>'''
     def norestart(self):
         self.running = False
     
-    def restart(self):
-        self.running = True
+    def restart(self, widget=None):
+        #self.running = True
+        print 'Restart'
+        self.outputbuffer.set_text('')
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
@@ -141,6 +158,8 @@ class GuiPdb:
         self.textbuffer.place_cursor(self.iter)
     
     def textview_expose(self, widget, event):
+        if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
+            return
         #print 'Expose event'
         visible_rect = widget.get_visible_rect()
         #it = widget.get_buffer().get_iter_at_line(4)
@@ -156,10 +175,11 @@ class GuiPdb:
         context.clip()
         context.set_line_width(1.0)
         context.set_source_rgba(1,1,0,.25)
-        context.rectangle(0,y1, width, y2)
+        context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
     def handle_debuggee_output(self):
+        print 'handle_output called'
         try:
             while True:
                 line = self.debuggee.readline()
@@ -186,8 +206,8 @@ class GuiPdb:
                     #dialog.run()
                 elif line.startswith('The program finished and will be restarted'):
                     print 'Finished: ', line
-                    self.outputbuffer.set_text('')
-                    dlg = MessageDlg(title='Restart', message='The program has finished and will be restarted now')
+                    
+                    dlg = MessageDlg(title='Restart', message='The program has finished and will be restarted now', action=self.restart)
                     dlg.run()
                     #break
                 else:
@@ -218,6 +238,7 @@ class GuiPdb:
     def append_output(self, txt):
         iter = self.outputbuffer.get_end_iter()
         self.outputbuffer.insert(iter, txt)
+        print 'inserted'
 
     def __init__(self):
         self.debuggee = pexpect.spawn("python3 -m pdb example.py", timeout=0.2)
@@ -239,10 +260,12 @@ class GuiPdb:
         # or if we return FALSE in the "delete_event" callback.
         self.window.connect("destroy", self.destroy)
     
-        # Sets the border width of the window.
-        self.window.set_border_width(10)
+        self.window.set_size_request(300, -1)
     
-        self.toplevelbox = gtk.VBox(False, 2)
+        # Sets the border width of the window.
+        #self.window.set_border_width(10)
+    
+        self.toplevelbox = gtk.VBox()
         self.toplevelhbox = gtk.HBox()
         self.treestore = gtk.TreeStore(str)
         self.treestore.append(None, ['Test'])
@@ -259,7 +282,7 @@ class GuiPdb:
         #self.append_output('Blah')
         #self.outputbuffer.set_text("Hallo Welt")
         self.output.set_editable(False)
-        self.output.set_property("height-request", 100)
+        self.output.set_property("height-request", 80)
     
         self.rightbox = gtk.VBox()
     
@@ -288,9 +311,15 @@ class GuiPdb:
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.sw.add(self.text)
         
+        self.notebook = gtk.Notebook()
+        self.notebook.set_tab_pos(gtk.POS_TOP)
+        self.notebook.append_page(self.output, None)
+
+        
         self.rightbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.sw, resize=True, shrink=True)
-        self.vpaned.pack2(self.output, resize=False, shrink=False)
+        #self.vpaned.pack2(self.output, resize=False, shrink=False)
+        self.vpaned.pack2(self.notebook, resize=False, shrink=False)
         #self.rightbox.pack_start(self.sw, True, True, 0)
         # self.rightbox.pack_start(self.buttonbox, False, False, 0)
         #self.rightbox.pack_start(self.output, False, False, 0)
@@ -301,43 +330,64 @@ class GuiPdb:
         self.toolbar = Toolbar(self)
         
         
-        menubar = gtk.MenuBar()
-        agr = gtk.AccelGroup()
-        self.toplevelbox.pack_start(menubar, False, False, 0)
+        uimanager = gtk.UIManager()
+        accelgroup = uimanager.get_accel_group()
+        self.window.add_accel_group(accelgroup)
+        actiongroup = gtk.ActionGroup('UIManagerExample')
+        self.actiongroup = actiongroup
+        # Create actions
+        actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None,
+                                  'Quit the Program', self.destroy),
+                                 ('File', None, '_File'),
+                                 ('Sound', None, '_Sound'),
+                                 ('RadioBand', None, '_Radio Band')])
+        actiongroup.get_action('Quit').set_property('short-label', '_Quit')
+        uimanager.insert_action_group(actiongroup, 0)
+        uimanager.add_ui_from_string(self.ui)
+        
+        menubar = uimanager.get_widget('/MenuBar')
+
+        self.toplevelbox.pack_start(menubar, False)
         menubar.show()
         
-        filemenuitem = gtk.MenuItem("_File", agr)
+        ## Old menubar
+        #menubar = gtk.MenuBar()
+        #agr = gtk.AccelGroup()
+        #self.toplevelbox.pack_start(menubar, False, False, 0)
+        #menubar.show()
+        #
+        #filemenuitem = gtk.MenuItem("_File", agr)
+        #filemenuitem.show()
+        #menubar.append(filemenuitem)
+        #filemenu = gtk.Menu()
+        #
+        #newitem = gtk.MenuItem("_New", agr)
+        #quititem = gtk.MenuItem("_Quit", agr)
+        #quititem.connect('activate', self.destroy)
+        #sep = gtk.SeparatorMenuItem()
+        #filemenu.append(newitem)
+        #filemenu.append(sep)
+        #filemenu.append(quititem)
+        #filemenuitem.set_submenu(filemenu)
+        #filemenu.show()
+        #quititem.show()
+        #newitem.show()
+        #sep.show()
         
-        filemenuitem.show()
-        menubar.append(filemenuitem)
-        filemenu = gtk.Menu()
         
-        newitem = gtk.MenuItem("_New", agr)
-        quititem = gtk.MenuItem("_Quit", agr)
-        quititem.connect('activate', self.destroy)
-        sep = gtk.SeparatorMenuItem()
-        filemenu.append(newitem)
-        filemenu.append(sep)
-        filemenu.append(quititem)
-        filemenuitem.set_submenu(filemenu)
-        filemenu.show()
-        quititem.show()
-        newitem.show()
-        sep.show()
-        
-        self.window.add_accel_group(agr)
-        key, mod = gtk.accelerator_parse("N")
-        newitem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
-        key, mod = gtk.accelerator_parse("Q")
-        quititem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
-
+        #self.window.add_accel_group(agr)
+        #key, mod = gtk.accelerator_parse("N")
+        #newitem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
+        #key, mod = gtk.accelerator_parse("Q")
+        #quititem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
+        #
 
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
         self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
         #self.window.add(self.text)
         
-        
+
 
         #self.window.add(self.toolbar)
         self.window.add(self.toplevelbox)
@@ -350,6 +400,7 @@ class GuiPdb:
         self.sw.show()
         self.vpaned.show()
         self.toplevelbox.show()
+        self.notebook.show()
         
         self.handle_debuggee_output()
         

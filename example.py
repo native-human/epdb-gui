@@ -5,6 +5,7 @@ def blah():
     y = 11
     x = x + y
 # if 1 is optimized
+#
 
 if 1:
     print('Yahoo')
@@ -14,6 +15,6 @@ if 1:
 print('Hallo Welt')
 
 # A loooooooooooooooooooooooooooooooooooooooooooooong Commmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmment
-#
 # a
 # b
+
