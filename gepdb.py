@@ -200,8 +200,7 @@ class GuiPdb:
                 elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
                     pass
                 elif line.startswith('#'):
-                    # TODO view in debug window
-                    pass
+                    self.append_debugbuffer(line[1:])
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -242,6 +241,10 @@ class GuiPdb:
         iter = self.outputbuffer.get_end_iter()
         self.outputbuffer.insert(iter, txt)
         print 'inserted'
+
+    def append_debugbuffer(self, txt):
+        iter = self.debugbuffer.get_end_iter()
+        self.debugbuffer.insert(iter, txt)
 
     def __init__(self):
         self.debuggee = pexpect.spawn("python3 -m epdb example.py", timeout=0.2)
@@ -285,7 +288,7 @@ class GuiPdb:
         #self.append_output('Blah')
         #self.outputbuffer.set_text("Hallo Welt")
         self.output.set_editable(False)
-        self.output.set_property("height-request", 80)
+        #self.output.set_property("height-request", 80)
     
         self.rightbox = gtk.VBox()
     
@@ -314,9 +317,26 @@ class GuiPdb:
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.sw.add(self.text)
         
+        self.debugbuffer = gtk.TextBuffer()
+        self.debug = gtk.TextView(self.debugbuffer)
+        self.debug.set_editable(False)
+        
+        self.debug_sw = gtk.ScrolledWindow()
+        self.debug_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.debug_sw.add(self.debug)
+        
+        self.output_sw = gtk.ScrolledWindow()
+        self.output_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.output_sw.add(self.output)
+        
         self.notebook = gtk.Notebook()
         self.notebook.set_tab_pos(gtk.POS_TOP)
-        self.notebook.append_page(self.output, None)
+        self.output_tab_lbl = gtk.Label('Output')
+        self.output_tab_lbl.show()
+        self.debug_tab_lbl = gtk.Label('Debug')
+        self.debug_tab_lbl.show()
+        self.notebook.append_page(self.output_sw, self.output_tab_lbl)
+        self.notebook.append_page(self.debug_sw, self.debug_tab_lbl)
 
         
         self.rightbox.pack_start(self.vpaned, True, True, 0)
@@ -398,6 +418,9 @@ class GuiPdb:
         self.rightbox.show()
         self.text.show()
         self.output.show()
+        self.output_sw.show()
+        self.debug.show()
+        self.debug_sw.show()
         self.treeview.show()
         self.toplevelhbox.show()
         self.sw.show()
