@@ -11,6 +11,7 @@ import sys
 import keyword, token, tokenize, cStringIO, string
 import pexpect
 import re
+import argparse
 
 class RestartDlg(gtk.Dialog):
     def __init__(self, parent):
@@ -184,7 +185,7 @@ class GuiPdb:
             while True:
                 line = self.debuggee.readline()
                 #print('line')
-                m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\)\<module\>\(\).*', line)
+                m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
                     if m.group(1) == '<string>':
                         continue
@@ -246,8 +247,8 @@ class GuiPdb:
         iter = self.debugbuffer.get_end_iter()
         self.debugbuffer.insert(iter, txt)
 
-    def __init__(self):
-        self.debuggee = pexpect.spawn("python3 -m epdb example.py", timeout=0.2)
+    def __init__(self, filename):
+        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=0.2)
         
         self.running = True
         
@@ -301,7 +302,7 @@ class GuiPdb:
         self.text.set_editable(False)
         
         #self.textbuffer = self.text.get_buffer()
-        txt = open('example.py', 'r').read()
+        txt = open(filename, 'r').read()
         self.textbuffer.set_text(txt)
         self.lineiter = self.textbuffer.get_iter_at_line(0)
         self.languagemanager = gtksourceview2.LanguageManager()
@@ -444,5 +445,10 @@ class GuiPdb:
         gtk.main()
 
 if __name__ == "__main__":
-    guipdb = GuiPdb()
+    parser = argparse.ArgumentParser(description='Start the application logic for the poll website')
+    parser.add_argument('file', help='Give the filename to execute in debug mode', nargs=1)
+    args = parser.parse_args()
+    print args.file[0]
+
+    guipdb = GuiPdb(args.file[0])
     guipdb.main()
