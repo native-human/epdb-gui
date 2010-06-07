@@ -123,10 +123,12 @@ class GuiPdb:
 
     def stepback_click(self, widget, data=None):
         # dialog =  gtk.Dialog(title="Restart", parent=None, flags=0)
-        dialog = RestartDlg(self)
-        dialog.run()
         #self.dialog = dialog
         
+        #dialog = RestartDlg(self)
+        #dialog.run()
+        self.debuggee.send('stepback\n')
+        self.handle_debuggee_output()
         print('Stepback')
 
     def restart_click(self, widget, data=None):
@@ -139,8 +141,10 @@ class GuiPdb:
         self.debuggee.send('next\n')
         self.handle_debuggee_output()
 
-    def rstepback_click(self, widget, data=None):
-        print('RStepback')
+    #def rstepback_click(self, widget, data=None):
+    #    print('RStepback')
+    #    self.debuggee.send('stepback\n')
+    #    self.handle_debuggee_output()
 
     def rnext_click(self, widget, data=None):
         dlg = MessageDlg(title='Restart', message='The program is restarting now')
