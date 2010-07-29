@@ -8,6 +8,7 @@ import gtksourceview2
 import sys
 import os
 import difflib
+import gtk.gdk
 
 class Filewatcher:
     def delete_event(self, widget, data=None):
@@ -19,7 +20,11 @@ class Filewatcher:
             _, _, _, _, _, _, _, _, _, st_ctime = os.stat(self.filename)
         except OSError:
             print 'OSError'
-            source_id = gobject.timeout_add(100, self.timeout)
+            self.textbuffer.set_text("File doesn't exist")
+            self.textbuffer.apply_tag(self.comment_tag,
+                                      self.textbuffer.get_start_iter(),
+                                      self.textbuffer.get_end_iter())
+            source_id = gobject.timeout_add(1000, self.timeout)
             return
         
         if st_ctime != self.ctime:
@@ -55,10 +60,15 @@ class Filewatcher:
         
     def __init__(self, filename):
         self.filename = filename
-        st_mode, st_ino, st_dev, st_nlink, st_uid, st_gid, st_size, st_atime, st_mtime, st_ctime = os.stat(self.filename)
-        self.ctime = st_ctime
-        with open(filename, 'r') as f:
-            self.text = f.read()
+        try:
+            st_mode, st_ino, st_dev, st_nlink, st_uid, st_gid, st_size, st_atime, st_mtime, st_ctime = os.stat(self.filename)
+        except OSError:
+            self.text = ''
+            self.ctime = None
+        else:
+            self.ctime = st_ctime
+            with open(filename, 'r') as f:
+                self.text = f.read()
         
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_default_size(640,480)
@@ -70,6 +80,10 @@ class Filewatcher:
         self.textview.set_editable(False)
         self.textview.set_show_line_numbers(True)
         self.textbuffer.set_text(self.text)
+        
+        self.comment_tag = self.textbuffer.create_tag(
+            foreground=gtk.gdk.Color(red=0x6666, green=0x6666, blue=0x6666),
+            justification=gtk.JUSTIFY_CENTER)
         
         self.sw = gtk.ScrolledWindow()
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
