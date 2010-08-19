@@ -55,30 +55,28 @@ class MessageDlg(gtk.Dialog):
         textlabel.show()
         okbutton.show()
     
-        
-
 class Toolbar(gtk.HBox):
     def __init__(self, prnt):
         gtk.HBox.__init__(self)
         self.prnt = prnt
         self.rcontinue = gtk.Button("RContinue")
         self.rcontinue.connect("clicked", self.prnt.rcontinue_click, None)
-        self.stepback = gtk.Button("Stepback")
-        self.stepback.connect("clicked", self.prnt.stepback_click, None)
+        self.stepback = gtk.Button("rstep")
+        self.stepback.connect("clicked", self.prnt.rstep_click, None)
         #self.stepback.connect_object("clicked", gtk.Widget.destroy, self.window)
         self.step = gtk.Button("Step")
         self.step.connect("clicked", self.prnt.step_click, None)
         self.next = gtk.Button("Next")
         self.next.connect("clicked", self.prnt.next_click, None)
-        self.nextback = gtk.Button("Nextback")
-        self.nextback.connect("clicked", self.prnt.rnext_click, None)
+        self.rnext = gtk.Button("rnext")
+        self.rnext.connect("clicked", self.prnt.rnext_click, None)
         self.cont = gtk.Button("Continue")
         self.cont.connect("clicked", self.prnt.continue_click, None)
         self.restart = gtk.Button("Restart")
         self.restart.connect("clicked", self.prnt.restart_click, None)
         #self.buttonbox = gtk.HBox()
         self.pack_start(self.rcontinue, False, False, 0)
-        self.pack_start(self.nextback, False, False, 0)
+        self.pack_start(self.rnext, False, False, 0)
         self.pack_start(self.stepback, False, False, 0)
         self.pack_start(self.step, False, False, 0)
         self.pack_start(self.next, False, False, 0)
@@ -86,7 +84,7 @@ class Toolbar(gtk.HBox):
         self.pack_start(self.restart, False, False, 0)
         self.step.show()
         self.next.show()
-        self.nextback.show()
+        self.rnext.show()
         self.restart.show()
         self.rcontinue.show()
         self.cont.show()
@@ -100,10 +98,10 @@ class GuiPdb:
           <menu action="File">
             <menuitem action="Quit"/>
           </menu>
-          <menu action="Sound">
-            <menuitem/>
-        </menu>
         </menubar>
+        <popup name="BreakpointMenu">
+            <menuitem action="Breakpoint"/>
+        </popup>
         </ui>'''
     def norestart(self):
         self.running = False
@@ -121,15 +119,49 @@ class GuiPdb:
         print "destroy signal occurred"
         gtk.main_quit()
 
-    def stepback_click(self, widget, data=None):
+    def toggle_breakpoint(self, widget, data=None):
+        print "toggle breakpoint", self.breakpointlineno
+        if not self.breakpointdict.get(self.breakpointlineno):
+            self.debuggee.send('break %s\n'%self.breakpointlineno)
+            self.handle_debuggee_output()
+            if self.breakpointsuccess:
+                mark = self.textbuffer.create_source_mark(None, "breakpoint",
+                        self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
+                self.breakpointdict[self.breakpointlineno] = self.breakpointno
+            else:
+                "TODO put can't set breakpoint into status line"
+                print self.breakpointdict
+        else:
+            bpno = self.breakpointdict.get(self.breakpointlineno)
+            if not bpno:
+                print "TODO put error in status line"
+                return
+            
+            self.clearbpsuccess = None
+            self.debuggee.send('clear {0}\n'.format(bpno))
+            self.handle_debuggee_output()
+            if self.clearbpsuccess == True:
+                start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
+                end = self.textbuffer.get_iter_at_line(self.breakpointlineno)
+                self.textbuffer.remove_source_marks(start, end, category=None)
+                del self.breakpointdict[self.breakpointlineno]
+                "Toggle breakpoint"
+                "clear from dictionary"
+            elif self.clearbpsuccess == False:
+                "Error message"
+            else:
+                print 'Critical Error'
+            #print "Deleting breakpoints not implemented yet"
+
+    def rstep_click(self, widget, data=None):
         # dialog =  gtk.Dialog(title="Restart", parent=None, flags=0)
         #self.dialog = dialog
         
         #dialog = RestartDlg(self)
         #dialog.run()
-        self.debuggee.send('stepback\n')
+        self.debuggee.send('rstep\n')
         self.handle_debuggee_output()
-        print('Stepback')
+        print('rstep')
 
     def restart_click(self, widget, data=None):
         print('Restart')
@@ -147,9 +179,11 @@ class GuiPdb:
     #    self.handle_debuggee_output()
 
     def rnext_click(self, widget, data=None):
-        dlg = MessageDlg(title='Restart', message='The program is restarting now')
-        dlg.run()
+        #dlg = MessageDlg(title='Restart', message='The program is restarting now')
+        #dlg.run()
         print('RNext')
+        self.debuggee.send('rnext\n')
+        self.handle_debuggee_output()
 
     def continue_click(self, widget, data=None):
         print('Continue')
@@ -158,9 +192,11 @@ class GuiPdb:
         #print self.text.get_visible_rect()
 
     def rcontinue_click(self, widget, data=None):
-        print('RContinue')
-        self.iter = self.textbuffer.get_iter_at_line(5)
-        self.textbuffer.place_cursor(self.iter)
+        #print('TODO RContinue')
+        self.debuggee.send('rcontinue\n')
+        self.handle_debuggee_output()
+        #self.iter = self.textbuffer.get_iter_at_line(5)
+        #self.textbuffer.place_cursor(self.iter)
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
@@ -179,7 +215,8 @@ class GuiPdb:
         context.rectangle(0, 0, width, height)
         context.clip()
         context.set_line_width(1.0)
-        context.set_source_rgba(1,1,0,.25)
+        context.set_source_rgba(1,1,
+                                0,.25)
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
@@ -206,6 +243,16 @@ class GuiPdb:
                     pass
                 elif line.startswith('#'):
                     self.append_debugbuffer(line[1:])
+                    #Breakpoint 1 at /home/patrick/myprogs/epdb/example.py:8
+                    bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
+                    clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
+                    if line.startswith('#*** Blank or comment'):
+                        self.breakpointsuccess = False
+                    elif bpsuc:
+                        self.breakpointno = bpsuc.group(1)
+                        self.breakpointsuccess = True
+                    elif clbpsuc:
+                        self.clearbpsuccess = True
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -217,11 +264,13 @@ class GuiPdb:
                     dlg = MessageDlg(title='Restart', message='The program has finished and will be restarted now', action=self.restart)
                     dlg.run()
                     #break
+                    
                 else:
                     print line
                     self.append_output(line)
         except pexpect.TIMEOUT:
-            pass
+            print "TIMEOUT"
+            #gtk.main_quit()
 
     def step_click(self, widget, data=None):
         print 'Step clicked'
@@ -245,14 +294,38 @@ class GuiPdb:
     def append_output(self, txt):
         iter = self.outputbuffer.get_end_iter()
         self.outputbuffer.insert(iter, txt)
+        self.output.scroll_mark_onscreen(self.outputbuffer.get_insert())
         print 'inserted'
 
     def append_debugbuffer(self, txt):
         iter = self.debugbuffer.get_end_iter()
         self.debugbuffer.insert(iter, txt)
+        self.debug.scroll_mark_onscreen(self.debugbuffer.get_insert())
+        #text_view.scroll_mark_onscreen(text_buffer.get_insert())
 
+    def button_release_sv(self, view, event):
+        if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
+            print "gutter clicked LEFT"
+            if event.button == 3:
+                print "Button Right"
+                
+                #visible = widget.get_visible_rect()
+                #it = view.get_buffer().get_iter_at_line(linenumber)
+                
+                x_buf, y_buf = view.window_to_buffer_coords(gtk.TEXT_WINDOW_LEFT,
+                                                    int(event.x), int(event.y))
+                linenoiter, linenocoord = view.get_line_at_y(y_buf)
+                print "coords", x_buf, y_buf
+                print "lineno", linenoiter.get_line()
+                self.breakpointlineno = linenoiter.get_line() + 1
+                self.breakpointmenu.popup( None, None, None, event.button, event.get_time())
+            #else:
+            #    print "Other Button:", event.button
+        #else:
+        #    print "gutter clicked RIGHT"
+        
     def __init__(self, filename):
-        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=0.2)
+        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=0.5)
         
         self.running = True
         
@@ -368,48 +441,17 @@ class GuiPdb:
                                   'Quit the Program', self.destroy),
                                  ('File', None, '_File'),
                                  ('Sound', None, '_Sound'),
-                                 ('RadioBand', None, '_Radio Band')])
+                                 ('RadioBand', None, '_Radio Band'),
+                                 ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)])
         actiongroup.get_action('Quit').set_property('short-label', '_Quit')
         uimanager.insert_action_group(actiongroup, 0)
         uimanager.add_ui_from_string(self.ui)
         
         menubar = uimanager.get_widget('/MenuBar')
-
+        self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
+        print "Menu type", type(self.breakpointmenu)
         self.toplevelbox.pack_start(menubar, False)
         menubar.show()
-        
-        ## Old menubar
-        #menubar = gtk.MenuBar()
-        #agr = gtk.AccelGroup()
-        #self.toplevelbox.pack_start(menubar, False, False, 0)
-        #menubar.show()
-        #
-        #filemenuitem = gtk.MenuItem("_File", agr)
-        #filemenuitem.show()
-        #menubar.append(filemenuitem)
-        #filemenu = gtk.Menu()
-        #
-        #newitem = gtk.MenuItem("_New", agr)
-        #quititem = gtk.MenuItem("_Quit", agr)
-        #quititem.connect('activate', self.destroy)
-        #sep = gtk.SeparatorMenuItem()
-        #filemenu.append(newitem)
-        #filemenu.append(sep)
-        #filemenu.append(quititem)
-        #filemenuitem.set_submenu(filemenu)
-        #filemenu.show()
-        #quititem.show()
-        #newitem.show()
-        #sep.show()
-        
-        
-        #self.window.add_accel_group(agr)
-        #key, mod = gtk.accelerator_parse("N")
-        #newitem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
-        #key, mod = gtk.accelerator_parse("Q")
-        #quititem.add_accelerator("activate", agr, key, mod, gtk.ACCEL_VISIBLE)
-        #
-
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
         self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
@@ -435,14 +477,12 @@ class GuiPdb:
         
         self.handle_debuggee_output()
         
-        #iter1 = self.textbuffer.get_iter_at_line(3)
-        #iter2 = self.textbuffer.get_iter_at_line(4)
-        #mark = self.textbuffer.create_mark("mark1", iter1, left_gravity=False)
-
-        #self.textbuffer.create_tag("highlighted",  background = "red")
-        #self.textbuffer.apply_tag_by_name("highlighted", iter1, iter2)
-
-        #print self.text.get_visible_rect()
+        #mark = self.textbuffer.create_source_mark("b1", "breakpoint", self.textbuffer.get_iter_at_line(1))
+        self.breakpointdict = {} # lineno: bpno
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size("breakpoint.png", 64, 64)
+        
+        self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
+        self.text.connect('button-release-event', self.button_release_sv)
     def main(self):
         # All PyGTK applications must have a gtk.main(). Control ends here
         # and waits for an event to occur (like a key press or mouse event).

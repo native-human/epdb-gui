@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#import builtins
+
 def blah():
     x = 10
     y = 11
