@@ -5,7 +5,8 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2 
+import gtksourceview2
+import gobject
 
 import sys
 import keyword, token, tokenize, cStringIO, string
@@ -228,6 +229,7 @@ class GuiPdb:
                 #print('line')
                 m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
+                    self.append_debugbuffer(line)
                     if m.group(1) == '<string>':
                         continue
                     lineno = int(m.group(2))
@@ -253,6 +255,10 @@ class GuiPdb:
                         self.breakpointsuccess = True
                     elif clbpsuc:
                         self.clearbpsuccess = True
+                    elif line.startswith("#newtimeline successful"):
+                        self.newtimelinesuc = True
+                    elif line.startswith("#Switched to timeline"):
+                        self.timelineswitchsuc = True
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -260,11 +266,9 @@ class GuiPdb:
                     #dialog.run()
                 elif line.startswith('The program finished and will be restarted'):
                     print 'Finished: ', line
-                    
                     dlg = MessageDlg(title='Restart', message='The program has finished and will be restarted now', action=self.restart)
                     dlg.run()
                     #break
-                    
                 else:
                     print line
                     self.append_output(line)
@@ -274,6 +278,7 @@ class GuiPdb:
 
     def step_click(self, widget, data=None):
         print 'Step clicked'
+        
         #if not self.running:
         #    print 'Debuggee is not running'
         #    return 
@@ -303,6 +308,42 @@ class GuiPdb:
         self.debug.scroll_mark_onscreen(self.debugbuffer.get_insert())
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
 
+    def on_treeview_button_press_event(self, treeview, event):
+        if event.button == 3:
+            x = int(event.x)
+            y = int(event.y)
+            time = event.time
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor( path, col, 0)
+                self.popup.popup( None, None, None, event.button, time)
+            return True
+    
+    def on_timeline_add_click(self, widget, data=None):
+        print 'Add clicked', self.timelineinput.get_text()
+        self.debuggee.send('newtimeline %s\n' % self.timelineinput.get_text())
+        self.newtimelinesuc = None
+        self.handle_debuggee_output()
+        if self.newtimelinesuc == True:
+            self.add_timeline(self.timelineinput.get_text())
+        else:
+            print self.newtimelinesuc
+            "TODO put failed message into status line"
+
+    def on_treeview_activated(self, treeview, row, col):
+        model = treeview.get_model()
+        self.debuggee.send('switch_timeline %s\n' % model[row][0])
+        self.timelineswitchsuc = None
+        self.handle_debuggee_output()
+        if self.timelineswitchsuc:
+            for e in self.treestore:
+                e[1]='white'
+            text = model[row][0]
+            model[row][1] = 'green'
+            print "activated", treeview, text
+
     def button_release_sv(self, view, event):
         if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
             print "gutter clicked LEFT"
@@ -323,6 +364,10 @@ class GuiPdb:
             #    print "Other Button:", event.button
         #else:
         #    print "gutter clicked RIGHT"
+    def add_timeline(self, name):
+        for e in self.treestore:
+            e[1]='white'
+        self.treestore.append(None, (name,'green'))
         
     def __init__(self, filename):
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=0.5)
@@ -332,34 +377,44 @@ class GuiPdb:
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_default_size(640,480)
-        # When the window is given the "delete_event" signal (this is given
-        # by the window manager, usually by the "close" option, or on the
-        # titlebar), we ask it to call the delete_event () function
-        # as defined above. The data passed to the callback
-        # function is NULL and is ignored in the callback function.
         self.window.connect("delete_event", self.delete_event)
     
-        # Here we connect the "destroy" event to a signal handler.  
-        # This event occurs when we call gtk_widget_destroy() on the window,
-        # or if we return FALSE in the "delete_event" callback.
         self.window.connect("destroy", self.destroy)
-    
-        #self.window.set_size_request(300, -1)
-    
-        # Sets the border width of the window.
-        #self.window.set_border_width(10)
     
         self.toplevelbox = gtk.VBox()
         self.toplevelhbox = gtk.HBox()
-        self.treestore = gtk.TreeStore(str)
-        self.treestore.append(None, ['Test'])
+        self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
+        #self.treestore = gtk.TreeStore(str)
+        #self.treestore.append(None, ['Test'])
+        #self.treestore.append(None, ('Test','white'))
+        self.add_timeline('head')
 
+        self.timeline_renderer = gtk.CellRendererText()
+        self.timeline_renderer.set_property('background', 'red')
+        
         self.treeview = gtk.TreeView(self.treestore)
-        self.tvcolumn = gtk.TreeViewColumn('Column 0')
+        self.treeview.set_headers_visible(False)
+        self.treeview.connect('button-press-event', self.on_treeview_button_press_event)
+        self.treeview.connect("row-activated", self.on_treeview_activated)
+        
+        self.leftbox = gtk.VBox()
+        self.timelinebox = gtk.HBox()
+        self.timelineinput = gtk.Entry()
+        self.timelineaddbutton = gtk.Button('Add')
+        self.timelineaddbutton.connect('clicked', self.on_timeline_add_click)
+        
+        self.timelinebox.pack_start(self.timelineinput, True, True, 0)
+        self.timelinebox.pack_start(self.timelineaddbutton, False, False, 0)
+        
+        self.timelinebox.show()
+        self.timelineinput.show()
+        self.timelineaddbutton.show()
+        self.leftbox.pack_start(self.timelinebox, False, False, 0)
+        self.leftbox.pack_start(self.treeview, True, True, 0)
+        self.leftbox.show()
+        
+        self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
         self.treeview.append_column(self.tvcolumn)
-        self.cell = gtk.CellRendererText()
-        self.tvcolumn.pack_start(self.cell, True)
-        self.tvcolumn.add_attribute(self.cell, 'text', 0)
 
         self.outputbuffer = gtk.TextBuffer()
         self.output = gtk.TextView(self.outputbuffer)
@@ -425,7 +480,7 @@ class GuiPdb:
         # self.rightbox.pack_start(self.buttonbox, False, False, 0)
         #self.rightbox.pack_start(self.output, False, False, 0)
         
-        self.toplevelhbox.pack_start(self.treeview, False, False, 0)
+        self.toplevelhbox.pack_start(self.leftbox, False, False, 0)
         self.toplevelhbox.pack_start(self.rightbox, True, True, 0)
         
         self.toolbar = Toolbar(self)
@@ -496,3 +551,4 @@ if __name__ == "__main__":
 
     guipdb = GuiPdb(args.file[0])
     guipdb.main()
+
