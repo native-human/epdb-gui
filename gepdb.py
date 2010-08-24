@@ -248,6 +248,9 @@ class GuiPdb:
                     #Breakpoint 1 at /home/patrick/myprogs/epdb/example.py:8
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
+                    icm = re.match("#ic: (\d) mode: (\w+)", line)
+                    print line
+                    
                     if line.startswith('#*** Blank or comment'):
                         self.breakpointsuccess = False
                     elif bpsuc:
@@ -259,6 +262,14 @@ class GuiPdb:
                         self.newtimelinesuc = True
                     elif line.startswith("#Switched to timeline"):
                         self.timelineswitchsuc = True
+                    elif icm:
+                        ic = icm.group(1)
+                        mode = icm.group(2)
+                        self.modelbl.set_markup(
+                            'Mode: <span color="red">{0}</span>'.format(mode))
+                        self.iclbl.set_markup('Ic: {0}'.format(ic))
+                        print "New markup set", mode, ic
+                        
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -323,6 +334,7 @@ class GuiPdb:
     
     def on_timeline_add_click(self, widget, data=None):
         print 'Add clicked', self.timelineinput.get_text()
+        self.statusbar.push(self.context_id, "Add clicked")
         self.debuggee.send('newtimeline %s\n' % self.timelineinput.get_text())
         self.newtimelinesuc = None
         self.handle_debuggee_output()
@@ -508,8 +520,22 @@ class GuiPdb:
         self.toplevelbox.pack_start(menubar, False)
         menubar.show()
 
+        self.statusbar = gtk.Statusbar()
+        self.context_id = self.statusbar.get_context_id("gepdb")
+        self.modelbl = gtk.Label("Mode label")
+        self.modelbl.set_markup('Mode: <span color="red">normal</span>')
+        self.modelbl.show()
+        
+        self.iclbl = gtk.Label("Ic label")
+        self.iclbl.set_markup('Ic: 0')
+        self.iclbl.show()
+        self.statusbar.pack_start(self.iclbl, False, False, 0)
+        self.statusbar.pack_start(self.modelbl, False, False, 20)
+        self.statusbar.show()
+
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
         self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
+        self.toplevelbox.pack_start(self.statusbar, False, False, 0)
         #self.window.add(self.text)
         
 
