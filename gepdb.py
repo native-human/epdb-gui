@@ -249,10 +249,14 @@ class GuiPdb:
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
                     icm = re.match("#ic: (\d) mode: (\w+)", line)
-                    print line
+                    #print line
                     
                     if line.startswith('#*** Blank or comment'):
                         self.breakpointsuccess = False
+                    elif line.startswith('#-->'):
+                        self.outputbuffer.set_text('')
+                    elif line.startswith('#->'):
+                        self.append_output(line[3:])
                     elif bpsuc:
                         self.breakpointno = bpsuc.group(1)
                         self.breakpointsuccess = True
