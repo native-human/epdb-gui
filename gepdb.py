@@ -7,6 +7,7 @@ pygtk.require('2.0')
 import gtk
 import gtksourceview2
 import gobject
+import pango
 
 import sys
 import keyword, token, tokenize, cStringIO, string
@@ -185,16 +186,16 @@ class TimelineBox(gtk.VBox):
         self.treeview.connect("row-activated", self.on_treeview_activated)
 
         self.timelinebox = gtk.HBox()
-        self.timelineinput = gtk.Entry()
-        self.timelineaddbutton = gtk.Button('Add')
-        self.timelineaddbutton.connect('clicked', self.on_timeline_add_click)
+        self.entry = gtk.Entry()
+        self.addbutton = gtk.Button('Add')
+        self.addbutton.connect('clicked', self.on_timeline_add_click)
         
-        self.timelinebox.pack_start(self.timelineinput, True, True, 0)
-        self.timelinebox.pack_start(self.timelineaddbutton, False, False, 0)
+        self.timelinebox.pack_start(self.entry, True, True, 0)
+        self.timelinebox.pack_start(self.addbutton, False, False, 0)
         
         self.timelinebox.show()
-        self.timelineinput.show()
-        self.timelineaddbutton.show()
+        self.entry.show()
+        self.addbutton.show()
         
         self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
         self.treeview.append_column(self.tvcolumn)
@@ -219,13 +220,13 @@ class TimelineBox(gtk.VBox):
             return True
     
     def on_timeline_add_click(self, widget, data=None):
-        print 'Add clicked', self.timelineinput.get_text()
+        print 'Add clicked', self.entry.get_text()
         self.prnt.statusbar.push(self.prnt.context_id, "Add clicked")
-        self.prnt.debuggee.send('newtimeline %s\n' % self.timelineinput.get_text())
+        self.prnt.debuggee.send('newtimeline %s\n' % self.entry.get_text())
         self.prnt.newtimelinesuc = None
         self.prnt.handle_debuggee_output()
         if self.prnt.newtimelinesuc == True:
-            self.add_timeline(self.timelineinput.get_text())
+            self.add_timeline(self.entry.get_text())
         else:
             print self.prnt.newtimelinesuc
             "TODO put failed message into status line"
@@ -253,6 +254,9 @@ class GuiPdb:
         <menubar name="MenuBar">
           <menu action="File">
             <menuitem action="Quit"/>
+          </menu>
+          <menu action="View">
+            <menuitem action="ChangeFont"/>
           </menu>
         </menubar>
         <popup name="BreakpointMenu">
@@ -536,6 +540,48 @@ class GuiPdb:
     #    for e in self.treestore:
     #        e[1]='white'
     #    self.treestore.append(None, (name,'green'))
+    
+    def changefontdlg(self, widget, data=None):
+        print "Change font dialog"
+        #window = gtk.FontSelectionDialog("Change font for application")
+        if not self.font_dialog:
+            window = gtk.FontSelectionDialog("Font Selection Dialog")
+            self.font_dialog = window
+    
+            window.set_position(gtk.WIN_POS_MOUSE)
+    
+            window.connect("destroy", self.font_dialog_destroyed)
+    
+            window.ok_button.connect("clicked",
+                                     self.font_selection_ok)
+            window.ok_button.connect_object("clicked",
+                                                lambda wid: wid.destroy(),
+                                                self.font_dialog)
+            window.cancel_button.connect_object("clicked",
+                                                lambda wid: wid.destroy(),
+                                                self.font_dialog)
+        window = self.font_dialog
+        if not (window.flags() & gtk.VISIBLE):
+            window.show()
+        else:
+            window.destroy()
+            self.font_dialog = None
+    
+    def font_selection_ok(self, button):
+        self.font = self.font_dialog.get_font_name()
+        if self.window:
+            font_desc = pango.FontDescription(self.font)
+            if font_desc: 
+                self.text.modify_font(font_desc)
+                self.varbox.treeview.modify_font(font_desc)
+                self.varbox.entry.modify_font(font_desc)
+                self.varbox.addbutton.modify_font(font_desc)
+                self.timelinebox.treeview.modify_font(font_desc)
+                self.timelinebox.addbutton.modify_font(font_desc)
+                self.timelinebox.entry.modify_font(font_desc)
+                
+    def font_dialog_destroyed(self, data=None):
+        self.font_dialog = None
         
     def __init__(self, filename):
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=3)
@@ -552,6 +598,7 @@ class GuiPdb:
         uimanager = gtk.UIManager()
         self.uimanager = uimanager
     
+        self.font_dialog = None
         accelgroup = uimanager.get_accel_group()
         self.window.add_accel_group(accelgroup)
         actiongroup = gtk.ActionGroup('UIManagerExample')
@@ -560,7 +607,8 @@ class GuiPdb:
         actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None,
                                   'Quit the Program', self.destroy),
                                  ('File', None, '_File'),
-                                 ('Sound', None, '_Sound'),
+                                 ('View', None, '_View'),
+                                 ('ChangeFont', None, 'Change Font ...', None, 'Change Font', self.changefontdlg),
                                  ('RadioBand', None, '_Radio Band'),
                                  ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)])
         actiongroup.get_action('Quit').set_property('short-label', '_Quit')
@@ -636,7 +684,6 @@ class GuiPdb:
         self.debug_tab_lbl.show()
         self.notebook.append_page(self.output_sw, self.output_tab_lbl)
         self.notebook.append_page(self.debug_sw, self.debug_tab_lbl)
-
         
         self.rightbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.sw, resize=True, shrink=True)
