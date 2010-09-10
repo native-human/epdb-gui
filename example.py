@@ -6,6 +6,7 @@ def blah():
     x = 10
     y = 11
     x = x + y
+    return x
 # if 1 is optimized
 #
 

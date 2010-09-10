@@ -13,67 +13,67 @@ import keyword, token, tokenize, cStringIO, string
 import pexpect
 import re
 import argparse
+#
+#class RestartDlg(gtk.Dialog):
+#    def __init__(self, parent):
+#        gtk.Dialog.__init__(self, title='Restart', parent=None, flags=0)
+#        self.prnt = parent
+#        restartbutton = gtk.Button('Restart')
+#        restartbutton.connect("clicked", self.restart_button_clicked)
+#        self.action_area.pack_start(restartbutton, True, True, 0)
+#        norestartbutton = gtk.Button("Don't restart")
+#        norestartbutton.connect("clicked", self.norestart_button_clicked)
+#        self.action_area.pack_start(norestartbutton, True, True, 0)
+#        norestartbutton.show()
+#        restartbutton.show()
+#        textlabel = gtk.Label('You have finished the end of the program. Do you want to restart?')
+#        self.vbox.pack_start(textlabel, True, True, 0)
+#        textlabel.show()
+#        
+#        #dialog.run()
+#    def restart_button_clicked(self, widget, data=None):
+#        print 'Restart clicked'
+#        self.prnt.restart()
+#        self.destroy()
+#    def norestart_button_clicked(self, widget, data=None):
+#        print 'No restart clicked'
+#        self.prnt.norestart()
+#        self.destroy()
 
-class RestartDlg(gtk.Dialog):
-    def __init__(self, parent):
-        gtk.Dialog.__init__(self, title='Restart', parent=None, flags=0)
-        self.prnt = parent
-        restartbutton = gtk.Button('Restart')
-        restartbutton.connect("clicked", self.restart_button_clicked)
-        self.action_area.pack_start(restartbutton, True, True, 0)
-        norestartbutton = gtk.Button("Don't restart")
-        norestartbutton.connect("clicked", self.norestart_button_clicked)
-        self.action_area.pack_start(norestartbutton, True, True, 0)
-        norestartbutton.show()
-        restartbutton.show()
-        textlabel = gtk.Label('You have finished the end of the program. Do you want to restart?')
-        self.vbox.pack_start(textlabel, True, True, 0)
-        textlabel.show()
-        
-        #dialog.run()
-    def restart_button_clicked(self, widget, data=None):
-        print 'Restart clicked'
-        self.prnt.restart()
-        self.destroy()
-    def norestart_button_clicked(self, widget, data=None):
-        print 'No restart clicked'
-        self.prnt.norestart()
-        self.destroy()
-        
-class MessageDlg(gtk.Dialog):
-    def __init__(self, title='', message='', action=None):
-        
-        gtk.Dialog.__init__(self, title=title)
-        okbutton = gtk.Button('Ok')
-        textlabel = gtk.Label(message)
-        self.action_area.pack_start(okbutton, True, True, 0)
-        if not action is None:
-            print 'Register callback'
-            okbutton.connect('clicked', action)
-        self.vbox.pack_start(textlabel, True, True, 0)
-        okbutton.connect('clicked', lambda x: self.destroy())
-
-        textlabel.show()
-        okbutton.show()
+#class MessageDlg(gtk.Dialog):
+#    def __init__(self, title='', message='', action=None):
+#        
+#        gtk.Dialog.__init__(self, title=title)
+#        okbutton = gtk.Button('Ok')
+#        textlabel = gtk.Label(message)
+#        self.action_area.pack_start(okbutton, True, True, 0)
+#        if not action is None:
+#            print 'Register callback'
+#            okbutton.connect('clicked', action)
+#        self.vbox.pack_start(textlabel, True, True, 0)
+#        okbutton.connect('clicked', lambda x: self.destroy())
+#
+#        textlabel.show()
+#        okbutton.show()
     
 class Toolbar(gtk.HBox):
     def __init__(self, prnt):
         gtk.HBox.__init__(self)
         self.prnt = prnt
-        self.rcontinue = gtk.Button("RContinue")
+        self.rcontinue = gtk.Button("rcontinue")
         self.rcontinue.connect("clicked", self.prnt.rcontinue_click, None)
         self.stepback = gtk.Button("rstep")
         self.stepback.connect("clicked", self.prnt.rstep_click, None)
         #self.stepback.connect_object("clicked", gtk.Widget.destroy, self.window)
-        self.step = gtk.Button("Step")
+        self.step = gtk.Button("step")
         self.step.connect("clicked", self.prnt.step_click, None)
-        self.next = gtk.Button("Next")
+        self.next = gtk.Button("next")
         self.next.connect("clicked", self.prnt.next_click, None)
         self.rnext = gtk.Button("rnext")
         self.rnext.connect("clicked", self.prnt.rnext_click, None)
-        self.cont = gtk.Button("Continue")
+        self.cont = gtk.Button("continue")
         self.cont.connect("clicked", self.prnt.continue_click, None)
-        self.restart = gtk.Button("Restart")
+        self.restart = gtk.Button("restart")
         self.restart.connect("clicked", self.prnt.restart_click, None)
         #self.buttonbox = gtk.HBox()
         self.pack_start(self.rcontinue, False, False, 0)
@@ -93,6 +93,161 @@ class Toolbar(gtk.HBox):
         self.stepback.show()
         self.show()
 
+class Varbox(gtk.VBox):
+    def __init__(self, prnt):
+        gtk.VBox.__init__(self)
+        self.prnt = prnt
+
+        self.treestore = gtk.TreeStore(str, str, str)
+ 
+        self.var_renderer = gtk.CellRendererText()
+        #self.timeline_renderer.set_property('background', 'red')
+        
+        self.treeview = gtk.TreeView(self.treestore)
+        self.treeview.set_headers_visible(False)
+        self.entrybox = gtk.HBox()
+        self.entry = gtk.Entry()
+        self.entry.show()
+        self.entrybox.pack_start(self.entry, True, True, 0)
+        self.addbutton = gtk.Button('Add')
+        self.addbutton.connect('clicked', self.on_varadd_clicked)
+        self.addbutton.show()
+        self.entrybox.pack_start(self.addbutton, False, False, 0)
+        self.entrybox.show()
+        
+        self.treeview.show()
+        #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
+        self.treedict = {}
+        self.tvcolumn1 = gtk.TreeViewColumn('Column 0', self.var_renderer, text=0, background=2)
+        self.tvcolumn2 = gtk.TreeViewColumn('Column 1', self.var_renderer, text=1, background=2)
+        
+        self.treeview.append_column(self.tvcolumn1)
+        self.treeview.append_column(self.tvcolumn2)
+        
+        #self.pack_start(self.timelinebox, False, False, 0)
+        self.pack_start(self.entrybox, False, False, 0)
+        self.pack_start(self.treeview, True, True, 0)
+        self.show()
+        
+    def on_varadd_clicked(self, widget, data=None):
+        #print 'Add variable', self.entry.get_text()
+        txt = self.entry.get_text()
+        if txt in self.treedict:
+            pass
+            # TODO statusline error
+        else:
+            id = self.treestore.append(None, (self.entry.get_text(), None, 'white'))
+            self.treedict[txt] = id
+        self.update_all_variables()
+        #self.update_variable(txt, 'blup')
+
+    def update_all_variables(self):
+        for var in self.treestore:
+            print var, var[0]
+            print 'p %s\n' % var[0]
+            self.prnt.debuggee.send('p %s\n' % var[0])
+            self.prnt.handle_debuggee_output()
+    
+    def update_variable(self, var, value):
+        print 'update variable', self.treestore.get(self.treedict[var],0,1)
+        self.treestore.set(self.treedict[var], 1, value)
+        self.treestore.set(self.treedict[var], 2, 'white')
+        
+    def update_variable_error(self, var):
+        self.treestore.set(self.treedict[var], 2, 'red')
+        self.treestore.set(self.treedict[var], 1, None)
+
+class TimelineBox(gtk.VBox):
+    def __init__(self, prnt):
+        gtk.VBox.__init__(self)
+        
+        self.prnt = prnt
+        self.prnt.actiongroup.add_actions([
+                    ('ActivateTimeline', None, '_Activate', None, "Activate Timeline",
+                     None),
+                    ('RemoveTimeline', None, '_Remove', None, "Remove Timeline",
+                     None)
+                    ])
+        
+        print 'Try getting popup'
+        self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
+        print 'popup', self.popup
+
+        self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
+        self.add_timeline('head')
+
+        self.timeline_renderer = gtk.CellRendererText()
+        self.timeline_renderer.set_property('background', 'red')
+        
+        self.treeview = gtk.TreeView(self.treestore)  # TODO rename to timeline treeview
+        self.treeview.set_headers_visible(False)
+        self.treeview.connect('button-press-event', self.on_treeview_button_press_event)
+        self.treeview.connect("row-activated", self.on_treeview_activated)
+
+        self.timelinebox = gtk.HBox()
+        self.timelineinput = gtk.Entry()
+        self.timelineaddbutton = gtk.Button('Add')
+        self.timelineaddbutton.connect('clicked', self.on_timeline_add_click)
+        
+        self.timelinebox.pack_start(self.timelineinput, True, True, 0)
+        self.timelinebox.pack_start(self.timelineaddbutton, False, False, 0)
+        
+        self.timelinebox.show()
+        self.timelineinput.show()
+        self.timelineaddbutton.show()
+        
+        self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
+        self.treeview.append_column(self.tvcolumn)
+        
+        self.treeview.show()
+        self.pack_start(self.timelinebox, False, False, 0)
+        self.pack_start(self.treeview, True, True, 0)
+        self.show()
+    
+    def on_treeview_button_press_event(self, treeview, event):
+        if event.button == 3:
+            x = int(event.x)
+            y = int(event.y)
+            time = event.time
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is not None:
+                path, col, cellx, celly = pthinfo
+                treeview.grab_focus()
+                treeview.set_cursor( path, col, 0)
+                # TODO make popup menu to remove breakpoint
+                self.popup.popup( None, None, None, event.button, time)
+            return True
+    
+    def on_timeline_add_click(self, widget, data=None):
+        print 'Add clicked', self.timelineinput.get_text()
+        self.prnt.statusbar.push(self.prnt.context_id, "Add clicked")
+        self.prnt.debuggee.send('newtimeline %s\n' % self.timelineinput.get_text())
+        self.prnt.newtimelinesuc = None
+        self.prnt.handle_debuggee_output()
+        if self.prnt.newtimelinesuc == True:
+            self.add_timeline(self.timelineinput.get_text())
+        else:
+            print self.prnt.newtimelinesuc
+            "TODO put failed message into status line"
+
+    def on_treeview_activated(self, treeview, row, col):
+        print "treeview activated", row, col
+        model = treeview.get_model()
+        self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
+        self.timelineswitchsuc = None
+        self.prnt.handle_debuggee_output()
+        if self.prnt.timelineswitchsuc:
+            for e in self.treestore:
+                e[1]='white'
+            text = model[row][0]
+            model[row][1] = 'green'
+            print "activated", treeview, text
+            
+    def add_timeline(self, name):
+        for e in self.treestore:
+            e[1]='white'
+        self.treestore.append(None, (name,'green'))
+    
 class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
@@ -102,6 +257,13 @@ class GuiPdb:
         </menubar>
         <popup name="BreakpointMenu">
             <menuitem action="Breakpoint"/>
+        </popup>
+        <popup name="TimelineMenu">
+            <menuitem action="ActivateTimeline"/>
+            <menuitem action="RemoveTimeline"/>
+        </popup>
+        <popup name="VarMenu">
+            <menuitem action="RemoveVar"/>
         </popup>
         </ui>'''
     def norestart(self):
@@ -162,6 +324,7 @@ class GuiPdb:
         #dialog.run()
         self.debuggee.send('rstep\n')
         self.handle_debuggee_output()
+        self.varbox.update_all_variables()
         print('rstep')
 
     def restart_click(self, widget, data=None):
@@ -173,6 +336,7 @@ class GuiPdb:
         print('Next')
         self.debuggee.send('next\n')
         self.handle_debuggee_output()
+        self.varbox.update_all_variables()
 
     #def rstepback_click(self, widget, data=None):
     #    print('RStepback')
@@ -185,12 +349,14 @@ class GuiPdb:
         print('RNext')
         self.debuggee.send('rnext\n')
         self.handle_debuggee_output()
+        self.varbox.update_all_variables()
 
     def continue_click(self, widget, data=None):
         print('Continue')
         self.debuggee.send('continue\n')
         self.handle_debuggee_output()
         #print self.text.get_visible_rect()
+        self.varbox.update_all_variables()
 
     def rcontinue_click(self, widget, data=None):
         #print('TODO RContinue')
@@ -198,6 +364,7 @@ class GuiPdb:
         self.handle_debuggee_output()
         #self.iter = self.textbuffer.get_iter_at_line(5)
         #self.textbuffer.place_cursor(self.iter)
+        self.varbox.update_all_variables()
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
@@ -226,7 +393,7 @@ class GuiPdb:
         try:
             while True:
                 line = self.debuggee.readline()
-                #print('line')
+                print(line)
                 m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
                     self.append_debugbuffer(line)
@@ -242,13 +409,24 @@ class GuiPdb:
                     print
                     #break
                 elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
-                    pass
+                    print 'Normal break'
+                    break
+                elif line.startswith("***"):
+                    print line
+                    self.append_debugbuffer(line)
                 elif line.startswith('#'):
                     self.append_debugbuffer(line[1:])
                     #Breakpoint 1 at /home/patrick/myprogs/epdb/example.py:8
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
                     icm = re.match("#ic: (\d) mode: (\w+)", line)
+                    #print "interesting line '{0}'".format(line.replace(" ", '_'))
+                    prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
+                    perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
+                    if prm:
+                        print "PRM", line
+                    else:
+                        print "no prm", prm, repr(line)
                     #print line
                     
                     if line.startswith('#*** Blank or comment'):
@@ -273,7 +451,17 @@ class GuiPdb:
                             'Mode: <span color="red">{0}</span>'.format(mode))
                         self.iclbl.set_markup('Ic: {0}'.format(ic))
                         print "New markup set", mode, ic
-                        
+                    elif prm:
+                        print 'Got update', line
+                        var = prm.group(1)
+                        value = prm.group(2)
+                        self.varbox.update_variable(var, value)
+                        print var, value
+                    elif perrm:
+                        print 'Got var err update'
+                        var = perrm.group(1)
+                        print var
+                        self.varbox.update_variable_error(var)
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -301,6 +489,7 @@ class GuiPdb:
         print 'Debuggee step sended'
         self.handle_debuggee_output()
         print('Step')
+        self.varbox.update_all_variables()
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
         print('Moved')
@@ -323,43 +512,6 @@ class GuiPdb:
         self.debug.scroll_mark_onscreen(self.debugbuffer.get_insert())
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
 
-    def on_treeview_button_press_event(self, treeview, event):
-        if event.button == 3:
-            x = int(event.x)
-            y = int(event.y)
-            time = event.time
-            pthinfo = treeview.get_path_at_pos(x, y)
-            if pthinfo is not None:
-                path, col, cellx, celly = pthinfo
-                treeview.grab_focus()
-                treeview.set_cursor( path, col, 0)
-                self.popup.popup( None, None, None, event.button, time)
-            return True
-    
-    def on_timeline_add_click(self, widget, data=None):
-        print 'Add clicked', self.timelineinput.get_text()
-        self.statusbar.push(self.context_id, "Add clicked")
-        self.debuggee.send('newtimeline %s\n' % self.timelineinput.get_text())
-        self.newtimelinesuc = None
-        self.handle_debuggee_output()
-        if self.newtimelinesuc == True:
-            self.add_timeline(self.timelineinput.get_text())
-        else:
-            print self.newtimelinesuc
-            "TODO put failed message into status line"
-
-    def on_treeview_activated(self, treeview, row, col):
-        model = treeview.get_model()
-        self.debuggee.send('switch_timeline %s\n' % model[row][0])
-        self.timelineswitchsuc = None
-        self.handle_debuggee_output()
-        if self.timelineswitchsuc:
-            for e in self.treestore:
-                e[1]='white'
-            text = model[row][0]
-            model[row][1] = 'green'
-            print "activated", treeview, text
-
     def button_release_sv(self, view, event):
         if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
             print "gutter clicked LEFT"
@@ -380,13 +532,13 @@ class GuiPdb:
             #    print "Other Button:", event.button
         #else:
         #    print "gutter clicked RIGHT"
-    def add_timeline(self, name):
-        for e in self.treestore:
-            e[1]='white'
-        self.treestore.append(None, (name,'green'))
+    #def add_timeline(self, name):
+    #    for e in self.treestore:
+    #        e[1]='white'
+    #    self.treestore.append(None, (name,'green'))
         
     def __init__(self, filename):
-        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=0.5)
+        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=3)
         
         self.running = True
         
@@ -397,41 +549,39 @@ class GuiPdb:
     
         self.window.connect("destroy", self.destroy)
     
+        uimanager = gtk.UIManager()
+        self.uimanager = uimanager
+    
+        accelgroup = uimanager.get_accel_group()
+        self.window.add_accel_group(accelgroup)
+        actiongroup = gtk.ActionGroup('UIManagerExample')
+        self.actiongroup = actiongroup
+        # Create actions
+        actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None,
+                                  'Quit the Program', self.destroy),
+                                 ('File', None, '_File'),
+                                 ('Sound', None, '_Sound'),
+                                 ('RadioBand', None, '_Radio Band'),
+                                 ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)])
+        actiongroup.get_action('Quit').set_property('short-label', '_Quit')
+        uimanager.insert_action_group(actiongroup, 0)
+        uimanager.add_ui_from_string(self.ui)
+        
         self.toplevelbox = gtk.VBox()
-        self.toplevelhbox = gtk.HBox()
-        self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
-        #self.treestore = gtk.TreeStore(str)
-        #self.treestore.append(None, ['Test'])
-        #self.treestore.append(None, ('Test','white'))
-        self.add_timeline('head')
-
-        self.timeline_renderer = gtk.CellRendererText()
-        self.timeline_renderer.set_property('background', 'red')
-        
-        self.treeview = gtk.TreeView(self.treestore)
-        self.treeview.set_headers_visible(False)
-        self.treeview.connect('button-press-event', self.on_treeview_button_press_event)
-        self.treeview.connect("row-activated", self.on_treeview_activated)
-        
+        #self.toplevelhbox = gtk.HBox()
+        self.toplevelhpaned = gtk.HPaned()
         self.leftbox = gtk.VBox()
-        self.timelinebox = gtk.HBox()
-        self.timelineinput = gtk.Entry()
-        self.timelineaddbutton = gtk.Button('Add')
-        self.timelineaddbutton.connect('clicked', self.on_timeline_add_click)
-        
-        self.timelinebox.pack_start(self.timelineinput, True, True, 0)
-        self.timelinebox.pack_start(self.timelineaddbutton, False, False, 0)
-        
-        self.timelinebox.show()
-        self.timelineinput.show()
-        self.timelineaddbutton.show()
-        self.leftbox.pack_start(self.timelinebox, False, False, 0)
-        self.leftbox.pack_start(self.treeview, True, True, 0)
+        self.lbvpane = gtk.VPaned()
+        self.timelinebox = TimelineBox(self)
+        self.varbox = Varbox(self)
         self.leftbox.show()
+        self.leftbox.pack_start(self.lbvpane, True, True, 0)
+        self.lbvpane.pack1(self.timelinebox)
+        self.lbvpane.pack2(self.varbox)
+        self.lbvpane.show()
+        #self.leftbox.pack_start(self.timelinebox, True, True, 0)
+        #self.leftbox.pack_start(self.varbox, True, True, 0)
         
-        self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
-        self.treeview.append_column(self.tvcolumn)
-
         self.outputbuffer = gtk.TextBuffer()
         self.output = gtk.TextView(self.outputbuffer)
         #self.append_output('Blah')
@@ -496,27 +646,12 @@ class GuiPdb:
         # self.rightbox.pack_start(self.buttonbox, False, False, 0)
         #self.rightbox.pack_start(self.output, False, False, 0)
         
-        self.toplevelhbox.pack_start(self.leftbox, False, False, 0)
-        self.toplevelhbox.pack_start(self.rightbox, True, True, 0)
+        self.toplevelhpaned.pack1(self.leftbox)
+        self.toplevelhpaned.pack2(self.rightbox)
+        #self.toplevelhbox.pack_start(self.leftbox, False, False, 0)
+        #self.toplevelhbox.pack_start(self.rightbox, True, True, 0)
         
         self.toolbar = Toolbar(self)
-        
-        
-        uimanager = gtk.UIManager()
-        accelgroup = uimanager.get_accel_group()
-        self.window.add_accel_group(accelgroup)
-        actiongroup = gtk.ActionGroup('UIManagerExample')
-        self.actiongroup = actiongroup
-        # Create actions
-        actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None,
-                                  'Quit the Program', self.destroy),
-                                 ('File', None, '_File'),
-                                 ('Sound', None, '_Sound'),
-                                 ('RadioBand', None, '_Radio Band'),
-                                 ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)])
-        actiongroup.get_action('Quit').set_property('short-label', '_Quit')
-        uimanager.insert_action_group(actiongroup, 0)
-        uimanager.add_ui_from_string(self.ui)
         
         menubar = uimanager.get_widget('/MenuBar')
         self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
@@ -538,11 +673,10 @@ class GuiPdb:
         self.statusbar.show()
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
-        self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
+        #self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
+        self.toplevelbox.pack_start(self.toplevelhpaned, True, True, 0)
         self.toplevelbox.pack_start(self.statusbar, False, False, 0)
         #self.window.add(self.text)
-        
-
 
         #self.window.add(self.toolbar)
         self.window.add(self.toplevelbox)
@@ -553,8 +687,9 @@ class GuiPdb:
         self.output_sw.show()
         self.debug.show()
         self.debug_sw.show()
-        self.treeview.show()
-        self.toplevelhbox.show()
+        #self.treeview.show()
+        #self.toplevelhbox.show()
+        self.toplevelhpaned.show()
         self.sw.show()
         self.vpaned.show()
         self.toplevelbox.show()
