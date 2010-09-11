@@ -392,11 +392,15 @@ class GuiPdb:
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
-    def handle_debuggee_output(self):
+    def handle_debuggee_output(self, ignorelines=1):
         print 'handle_output called'
         try:
             while True:
                 line = self.debuggee.readline()
+                if ignorelines > 0:
+                    print "line ignored:", line
+                    ignorelines -= 1
+                    continue
                 print(line)
                 m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
