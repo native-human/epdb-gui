@@ -326,21 +326,24 @@ class GuiPdb:
         
         #dialog = RestartDlg(self)
         #dialog.run()
-        self.debuggee.send('rstep\n')
-        self.handle_debuggee_output()
-        self.varbox.update_all_variables()
+        self.debuggee_send('rstep')
+        #self.debuggee.send('rstep\n')
+        #self.handle_debuggee_output()
+        #self.varbox.update_all_variables()
         print('rstep')
 
     def restart_click(self, widget, data=None):
         print('Restart')
-        self.debuggee.send('restart\n')
-        self.handle_debuggee_output()
+        self.debuggee_send('restart')
+        #self.debuggee.send('restart\n')
+        #self.handle_debuggee_output()
 
     def next_click(self, widget, data=None):
         print('Next')
-        self.debuggee.send('next\n')
-        self.handle_debuggee_output()
-        self.varbox.update_all_variables()
+        self.debuggee_send('next')
+        #self.debuggee.send('next\n')
+        #self.handle_debuggee_output()
+        #self.varbox.update_all_variables()
 
     #def rstepback_click(self, widget, data=None):
     #    print('RStepback')
@@ -351,27 +354,43 @@ class GuiPdb:
         #dlg = MessageDlg(title='Restart', message='The program is restarting now')
         #dlg.run()
         print('RNext')
-        self.debuggee.send('rnext\n')
-        self.handle_debuggee_output()
-        self.varbox.update_all_variables()
+        self.debuggee_send('rnext')
+        #self.debuggee.send('rnext\n')
+        #self.handle_debuggee_output()
+        #self.varbox.update_all_variables()
 
     def continue_click(self, widget, data=None):
         print('Continue')
-        self.debuggee.send('continue\n')
-        self.handle_debuggee_output()
+        self.debuggee_send('continue')
+        #self.debuggee.send('continue\n')
+        #self.handle_debuggee_output()
         #print self.text.get_visible_rect()
-        self.varbox.update_all_variables()
+        #self.varbox.update_all_variables()
 
     def rcontinue_click(self, widget, data=None):
-        #print('TODO RContinue')
-        self.debuggee.send('rcontinue\n')
-        self.handle_debuggee_output()
+        self.debuggee_send('rcontinue')
+        #self.debuggee.send('rcontinue\n')
+        #self.handle_debuggee_output()
         #self.iter = self.textbuffer.get_iter_at_line(5)
         #self.textbuffer.place_cursor(self.iter)
-        self.varbox.update_all_variables()
+        #self.varbox.update_all_variables()
+    
+    def step_click(self, widget, data=None):
+        print 'Step clicked'
+        self.debuggee_send('step')
+        print 'Step finished'
+        #if not self.running:
+        #    print 'Debuggee is not running'
+        #    return 
+        #self.debuggee.send('step\n')
+        #print 'Debuggee step sended'
+        #self.handle_debuggee_output()
+        #print('Step')
+        #self.varbox.update_all_variables()
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
+         
             return
         #print 'Expose event'
         visible_rect = widget.get_visible_rect()
@@ -392,8 +411,20 @@ class GuiPdb:
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
+    def debuggee_send(self, line):
+        if not line.endswith('\n'):
+            line += '\n'
+        print "SEND LINE TO DEBUGGEE: ", line
+        self.debuggee.send(line)
+        returnmode = self.handle_debuggee_output()
+        if returnmode == 'normal':
+            self.varbox.update_all_variables()
+        elif returnmode == 'intermediate':
+            print 'INTERMEDIATE RETURN'
+            pass
     def handle_debuggee_output(self, ignorelines=1):
         print 'handle_output called'
+        returnmode = 'normal'
         try:
             while True:
                 line = self.debuggee.readline()
@@ -416,8 +447,10 @@ class GuiPdb:
                     print 'At line: ', line[3:]
                     print
                     #break
+                    
                 elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
                     print 'Normal break'
+                    returnmode = 'normal'
                     break
                 elif line.startswith("***"):
                     print line
@@ -431,14 +464,22 @@ class GuiPdb:
                     #print "interesting line '{0}'".format(line.replace(" ", '_'))
                     prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
-                    if prm:
-                        print "PRM", line
-                    else:
-                        print "no prm", prm, repr(line)
+                    #if prm:
+                    #    print "PRM", line
+                    #else:
+                    #    print "no prm", prm, repr(line)
                     #print line
+                    
                     
                     if line.startswith('#*** Blank or comment'):
                         self.breakpointsuccess = False
+                    elif line.startswith("#expect input#"):
+                        self.input_entry.set_sensitive(True)
+                        self.input_entry.grab_focus()
+                        self.modelbl.set_markup(
+                            'Mode: <span color="red">{0}</span>'.format('INPUT'))
+                        returnmode = 'intermediate'
+                        break
                     elif line.startswith('#-->'):
                         self.outputbuffer.set_text('')
                     elif line.startswith('#->'):
@@ -486,18 +527,7 @@ class GuiPdb:
         except pexpect.TIMEOUT:
             print "TIMEOUT"
             #gtk.main_quit()
-
-    def step_click(self, widget, data=None):
-        print 'Step clicked'
-        
-        #if not self.running:
-        #    print 'Debuggee is not running'
-        #    return 
-        self.debuggee.send('step\n')
-        print 'Debuggee step sended'
-        self.handle_debuggee_output()
-        print('Step')
-        self.varbox.update_all_variables()
+        return returnmode
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
         print('Moved')
@@ -537,6 +567,7 @@ class GuiPdb:
                 self.breakpointlineno = linenoiter.get_line() + 1
                 self.breakpointmenu.popup( None, None, None, event.button, event.get_time())
             #else:
+ 
             #    print "Other Button:", event.button
         #else:
         #    print "gutter clicked RIGHT"
@@ -587,8 +618,16 @@ class GuiPdb:
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
         
+    def input_entry_activate(self, entry):
+        print 'activate', entry.get_text()
+        self.debuggee.send(entry.get_text()+'\n')
+        entry.set_text('')
+        entry.set_sensitive(False)
+        self.handle_debuggee_output(ignorelines=0)
+        print "returned from handle_debuggee_output"
+        
     def __init__(self, filename):
-        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=3)
+        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=None)
         
         self.running = True
         
@@ -676,9 +715,22 @@ class GuiPdb:
         self.debug_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.debug_sw.add(self.debug)
         
+        self.outputbox = gtk.VBox()
         self.output_sw = gtk.ScrolledWindow()
         self.output_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.output_sw.add(self.output)
+        
+        self.input_entry = gtk.Entry()
+        #self.input_entry.set_editable(False)
+        #gray = gtk.gdk.Color(red=30000, green=30000, blue=30000, pixel=5)
+        #gray = gtk.gdk.Color('#999')
+        #self.input_entry.modify_bg(gtk.STATE_NORMAL, gray)
+        self.input_entry.set_sensitive(False)
+        self.input_entry.show()
+        self.input_entry.connect("activate", self.input_entry_activate)
+        self.outputbox.pack_start(self.output_sw, True, True, 0)
+        self.outputbox.pack_start(self.input_entry, True, True, 0)
+        self.outputbox.show()
         
         self.notebook = gtk.Notebook()
         self.notebook.set_tab_pos(gtk.POS_TOP)
@@ -686,7 +738,7 @@ class GuiPdb:
         self.output_tab_lbl.show()
         self.debug_tab_lbl = gtk.Label('Debug')
         self.debug_tab_lbl.show()
-        self.notebook.append_page(self.output_sw, self.output_tab_lbl)
+        self.notebook.append_page(self.outputbox, self.output_tab_lbl)
         self.notebook.append_page(self.debug_sw, self.debug_tab_lbl)
         
         self.rightbox.pack_start(self.vpaned, True, True, 0)
@@ -735,7 +787,9 @@ class GuiPdb:
         self.rightbox.show()
         self.text.show()
         self.output.show()
-        self.output_sw.show()
+        self.output_sw.show(
+            
+        )
         self.debug.show()
         self.debug_sw.show()
         #self.treeview.show()
@@ -746,7 +800,7 @@ class GuiPdb:
         self.toplevelbox.show()
         self.notebook.show()
         
-        self.handle_debuggee_output()
+        self.handle_debuggee_output(ignorelines=0)
         
         #mark = self.textbuffer.create_source_mark("b1", "breakpoint", self.textbuffer.get_iter_at_line(1))
         self.breakpointdict = {} # lineno: bpno
