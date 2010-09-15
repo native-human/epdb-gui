@@ -99,22 +99,6 @@ class Filewatcher:
         self.highlighted_lines = []
         self.textview.connect("expose-event", self.highlight_line)
         self.odd = 1
-        
-        #self.highlighted_lines = [5, 7,10]
-        #window = self.textview.get_window(gtk.TEXT_WINDOW_TEXT)
-        #for linenumber in self.highlighted_lines:
-        #    it = self.textview.get_buffer().get_iter_at_line(linenumber)
-        #    y1,y2 = self.textview.get_line_yrange(it)
-        #    print 'highlight line', y1, y2
-        #
-        #    width, height = self.textview.allocation.width, self.textview.allocation.height
-        #    context = window.cairo_create()
-        #    context.rectangle(0, 0, width, height)
-        #    context.clip()
-        #    context.set_line_width(1.0)
-        #    context.set_source_rgba(0.5,1,0.5,1)
-        #    context.rectangle(0,y1, width, y2)
-        #    context.fill()
     
     def highlight_line(self, widget, event): #expose event
         #print 'Event', event.window == widget.get_window(gtk.TEXT_WINDOW_TEXT), \

@@ -63,9 +63,8 @@ class Toolbar(gtk.HBox):
         self.prnt = prnt
         self.rcontinue = gtk.Button("rcontinue")
         self.rcontinue.connect("clicked", self.prnt.rcontinue_click, None)
-        self.stepback = gtk.Button("rstep")
-        self.stepback.connect("clicked", self.prnt.rstep_click, None)
-        #self.stepback.connect_object("clicked", gtk.Widget.destroy, self.window)
+        self.rstep = gtk.Button("rstep")
+        self.rstep.connect("clicked", self.prnt.rstep_click, None)
         self.step = gtk.Button("step")
         self.step.connect("clicked", self.prnt.step_click, None)
         self.next = gtk.Button("next")
@@ -79,7 +78,7 @@ class Toolbar(gtk.HBox):
         #self.buttonbox = gtk.HBox()
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
-        self.pack_start(self.stepback, False, False, 0)
+        self.pack_start(self.rstep, False, False, 0)
         self.pack_start(self.step, False, False, 0)
         self.pack_start(self.next, False, False, 0)
         self.pack_start(self.cont, False, False, 0)
@@ -91,8 +90,19 @@ class Toolbar(gtk.HBox):
         self.rcontinue.show()
         self.cont.show()
         #self.buttonbox.show()
-        self.stepback.show()
+        self.rstep.show()
         self.show()
+    def modify_font(self, font):
+        print "Modify font"
+        print "Child", self.next.child
+        self.next.child.modify_font(font)
+        self.step.child.modify_font(font)
+        self.cont.child.modify_font(font)
+        self.rcontinue.child.modify_font(font)
+        self.rstep.child.modify_font(font)
+        self.rnext.child.modify_font(font)
+        self.restart.child.modify_font(font)
+        
 
 class Varbox(gtk.VBox):
     def __init__(self, prnt):
@@ -103,7 +113,8 @@ class Varbox(gtk.VBox):
  
         self.var_renderer = gtk.CellRendererText()
         #self.timeline_renderer.set_property('background', 'red')
-        
+        self.lbl = gtk.Label('Variables')
+        self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         self.entrybox = gtk.HBox()
@@ -126,6 +137,7 @@ class Varbox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn2)
         
         #self.pack_start(self.timelinebox, False, False, 0)
+        self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.entrybox, False, False, 0)
         self.pack_start(self.treeview, True, True, 0)
         self.show()
@@ -144,13 +156,13 @@ class Varbox(gtk.VBox):
 
     def update_all_variables(self):
         for var in self.treestore:
-            print var, var[0]
-            print 'p %s\n' % var[0]
+            #print var, var[0]
+            #print 'p %s\n' % var[0]
             self.prnt.debuggee.send('p %s\n' % var[0])
             self.prnt.handle_debuggee_output()
     
     def update_variable(self, var, value):
-        print 'update variable', self.treestore.get(self.treedict[var],0,1)
+        #print 'update variable', self.treestore.get(self.treedict[var],0,1)
         self.treestore.set(self.treedict[var], 1, value)
         self.treestore.set(self.treedict[var], 2, 'white')
         
@@ -170,10 +182,10 @@ class TimelineBox(gtk.VBox):
                      None)
                     ])
         
-        print 'Try getting popup'
+        #print 'Try getting popup'
         self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
-        print 'popup', self.popup
-
+        #print 'popup', self.popup
+        self.lbl = gtk.Label("Timelines")
         self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
         self.add_timeline('head')
 
@@ -196,11 +208,13 @@ class TimelineBox(gtk.VBox):
         self.timelinebox.show()
         self.entry.show()
         self.addbutton.show()
+        self.lbl.show()
         
         self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
         self.treeview.append_column(self.tvcolumn)
         
         self.treeview.show()
+        self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.treeview, True, True, 0)
         self.show()
@@ -220,7 +234,7 @@ class TimelineBox(gtk.VBox):
             return True
     
     def on_timeline_add_click(self, widget, data=None):
-        print 'Add clicked', self.entry.get_text()
+        #print 'Add clicked', self.entry.get_text()
         self.prnt.statusbar.push(self.prnt.context_id, "Add clicked")
         self.prnt.debuggee.send('newtimeline %s\n' % self.entry.get_text())
         self.prnt.newtimelinesuc = None
@@ -228,11 +242,11 @@ class TimelineBox(gtk.VBox):
         if self.prnt.newtimelinesuc == True:
             self.add_timeline(self.entry.get_text())
         else:
-            print self.prnt.newtimelinesuc
+            #print self.prnt.newtimelinesuc
             "TODO put failed message into status line"
 
     def on_treeview_activated(self, treeview, row, col):
-        print "treeview activated", row, col
+        #print "treeview activated", row, col
         model = treeview.get_model()
         self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
         self.timelineswitchsuc = None
@@ -242,7 +256,7 @@ class TimelineBox(gtk.VBox):
                 e[1]='white'
             text = model[row][0]
             model[row][1] = 'green'
-            print "activated", treeview, text
+            #print "activated", treeview, text
             
     def add_timeline(self, name):
         for e in self.treestore:
@@ -287,7 +301,7 @@ class GuiPdb:
         gtk.main_quit()
 
     def toggle_breakpoint(self, widget, data=None):
-        print "toggle breakpoint", self.breakpointlineno
+        #print "toggle breakpoint", self.breakpointlineno
         if not self.breakpointdict.get(self.breakpointlineno):
             self.debuggee.send('break %s\n'%self.breakpointlineno)
             self.handle_debuggee_output()
@@ -297,7 +311,7 @@ class GuiPdb:
                 self.breakpointdict[self.breakpointlineno] = self.breakpointno
             else:
                 "TODO put can't set breakpoint into status line"
-                print self.breakpointdict
+                #print self.breakpointdict
         else:
             bpno = self.breakpointdict.get(self.breakpointlineno)
             if not bpno:
@@ -341,14 +355,10 @@ class GuiPdb:
     def next_click(self, widget, data=None):
         print('Next')
         self.debuggee_send('next')
+
         #self.debuggee.send('next\n')
         #self.handle_debuggee_output()
         #self.varbox.update_all_variables()
-
-    #def rstepback_click(self, widget, data=None):
-    #    print('RStepback')
-    #    self.debuggee.send('stepback\n')
-    #    self.handle_debuggee_output()
 
     def rnext_click(self, widget, data=None):
         #dlg = MessageDlg(title='Restart', message='The program is restarting now')
@@ -378,11 +388,12 @@ class GuiPdb:
     def step_click(self, widget, data=None):
         print 'Step clicked'
         self.debuggee_send('step')
-        print 'Step finished'
+        #print 'Step finished'
         #if not self.running:
         #    print 'Debuggee is not running'
         #    return 
-        #self.debuggee.send('step\n')
+        #self.debuggee.sen
+        d('step\n')
         #print 'Debuggee step sended'
         #self.handle_debuggee_output()
         #print('Step')
@@ -414,25 +425,25 @@ class GuiPdb:
     def debuggee_send(self, line):
         if not line.endswith('\n'):
             line += '\n'
-        print "SEND LINE TO DEBUGGEE: ", line
+        #print "SEND LINE TO DEBUGGEE: ", line
         self.debuggee.send(line)
         returnmode = self.handle_debuggee_output()
         if returnmode == 'normal':
             self.varbox.update_all_variables()
         elif returnmode == 'intermediate':
-            print 'INTERMEDIATE RETURN'
+        #    print 'INTERMEDIATE RETURN'
             pass
     def handle_debuggee_output(self, ignorelines=1):
-        print 'handle_output called'
+        #print 'handle_output called'
         returnmode = 'normal'
         try:
             while True:
                 line = self.debuggee.readline()
                 if ignorelines > 0:
-                    print "line ignored:", line
+                    #print "line ignored:", line
                     ignorelines -= 1
                     continue
-                print(line)
+                #print(line)
                 m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
                     self.append_debugbuffer(line)
@@ -449,7 +460,7 @@ class GuiPdb:
                     #break
                     
                 elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
-                    print 'Normal break'
+                    #print 'Normal break'
                     returnmode = 'normal'
                     break
                 elif line.startswith("***"):
@@ -499,17 +510,17 @@ class GuiPdb:
                         self.modelbl.set_markup(
                             'Mode: <span color="red">{0}</span>'.format(mode))
                         self.iclbl.set_markup('Ic: {0}'.format(ic))
-                        print "New markup set", mode, ic
+                        #print "New markup set", mode, ic
                     elif prm:
-                        print 'Got update', line
+                        #print 'Got update', line
                         var = prm.group(1)
                         value = prm.group(2)
                         self.varbox.update_variable(var, value)
-                        print var, value
+                        #print var, value
                     elif perrm:
-                        print 'Got var err update'
+                        #print 'Got var err update'
                         var = perrm.group(1)
-                        print var
+                        #print var
                         self.varbox.update_variable_error(var)
                 elif line.startswith('--Return--'):
                     print 'Return'
@@ -522,7 +533,7 @@ class GuiPdb:
                     dlg.run()
                     #break
                 else:
-                    print line
+                    #print line
                     self.append_output(line)
         except pexpect.TIMEOUT:
             print "TIMEOUT"
@@ -530,19 +541,19 @@ class GuiPdb:
         return returnmode
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
-        print('Moved')
+        #print('Moved')
         self.textbuffer.place_cursor(self.lineiter)
         
     def text_clicked(self, widget, event):
-        print('Clicked')
-
+        #print('Clicked')
         self.textbuffer.place_cursor(self.lineiter)
 
     def append_output(self, txt):
         iter = self.outputbuffer.get_end_iter()
+        print("append_txt", repr(txt))
         self.outputbuffer.insert(iter, txt)
         self.output.scroll_mark_onscreen(self.outputbuffer.get_insert())
-        print 'inserted'
+        #print 'inserted'
 
     def append_debugbuffer(self, txt):
         iter = self.debugbuffer.get_end_iter()
@@ -552,9 +563,9 @@ class GuiPdb:
 
     def button_release_sv(self, view, event):
         if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
-            print "gutter clicked LEFT"
+            #print "gutter clicked LEFT"
             if event.button == 3:
-                print "Button Right"
+                #print "Button Right"
                 
                 #visible = widget.get_visible_rect()
                 #it = view.get_buffer().get_iter_at_line(linenumber)
@@ -562,8 +573,8 @@ class GuiPdb:
                 x_buf, y_buf = view.window_to_buffer_coords(gtk.TEXT_WINDOW_LEFT,
                                                     int(event.x), int(event.y))
                 linenoiter, linenocoord = view.get_line_at_y(y_buf)
-                print "coords", x_buf, y_buf
-                print "lineno", linenoiter.get_line()
+                #print "coords", x_buf, y_buf
+                #print "lineno", linenoiter.get_line()
                 self.breakpointlineno = linenoiter.get_line() + 1
                 self.breakpointmenu.popup( None, None, None, event.button, event.get_time())
             #else:
@@ -577,7 +588,7 @@ class GuiPdb:
     #    self.treestore.append(None, (name,'green'))
     
     def changefontdlg(self, widget, data=None):
-        print "Change font dialog"
+        #print "Change font dialog"
         #window = gtk.FontSelectionDialog("Change font for application")
         if not self.font_dialog:
             window = gtk.FontSelectionDialog("Font Selection Dialog")
@@ -606,26 +617,39 @@ class GuiPdb:
         self.font = self.font_dialog.get_font_name()
         if self.window:
             font_desc = pango.FontDescription(self.font)
-            if font_desc: 
+            if font_desc:
                 self.text.modify_font(font_desc)
+                self.debug.modify_font(font_desc)
                 self.varbox.treeview.modify_font(font_desc)
                 self.varbox.entry.modify_font(font_desc)
-                self.varbox.addbutton.modify_font(font_desc)
+                self.varbox.addbutton.child.modify_font(font_desc)
+                self.varbox.lbl.modify_font(font_desc)
                 self.timelinebox.treeview.modify_font(font_desc)
-                self.timelinebox.addbutton.modify_font(font_desc)
+                self.timelinebox.addbutton.child.modify_font(font_desc)
                 self.timelinebox.entry.modify_font(font_desc)
+                self.timelinebox.lbl.modify_font(font_desc)
+                self.toolbar.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
         
     def input_entry_activate(self, entry):
-        print 'activate', entry.get_text()
+        #print 'activate', entry.get_text()
         self.debuggee.send(entry.get_text()+'\n')
         entry.set_text('')
         entry.set_sensitive(False)
         self.handle_debuggee_output(ignorelines=0)
-        print "returned from handle_debuggee_output"
-        
+        #
+        #print "returned from handle_debuggee_output"
+    
+    def lbvpane_expose(self, pane, event):
+        print "lbvpane_expose", pane
+        rect = self.lbvpane.get_allocation()
+        print "Size request", rect.width, rect.height, rect.x, rect.y
+        self.lbvpane.set_position(rect.height/2)
+        self.lbvpane.disconnect(
+            self.lbvpane_expose_handlerid)
+    
     def __init__(self, filename):
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=None)
         
@@ -758,7 +782,7 @@ class GuiPdb:
         
         menubar = uimanager.get_widget('/MenuBar')
         self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
-        print "Menu type", type(self.breakpointmenu)
+        #print "Menu type", type(self.breakpointmenu)
         self.toplevelbox.pack_start(menubar, False)
         menubar.show()
 
@@ -808,6 +832,7 @@ class GuiPdb:
         
         self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
         self.text.connect('button-release-event', self.button_release_sv)
+        self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     def main(self):
         # All PyGTK applications must have a gtk.main(). Control ends here
         # and waits for an event to occur (like a key press or mouse event).
@@ -817,7 +842,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Start the application logic for the poll website')
     parser.add_argument('file', help='Give the filename to execute in debug mode', nargs=1)
     args = parser.parse_args()
-    print args.file[0]
+    #print args.file[0]
 
     guipdb = GuiPdb(args.file[0])
     guipdb.main()
