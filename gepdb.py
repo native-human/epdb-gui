@@ -172,6 +172,7 @@ class Varbox(gtk.VBox):
 
 class TimelineBox(gtk.VBox):
     def __init__(self, prnt):
+        
         gtk.VBox.__init__(self)
         
         self.prnt = prnt
@@ -218,6 +219,11 @@ class TimelineBox(gtk.VBox):
         self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.treeview, True, True, 0)
         self.show()
+    
+    def reset(self):
+        "Reset the timelinebox to its initial state"
+        self.treestore.clear()
+        self.add_timeline('head')
     
     def on_treeview_button_press_event(self, treeview, event):
         if event.button == 3:
@@ -267,6 +273,8 @@ class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
           <menu action="File">
+            <menuitem action="Open"/>
+            <separator/>
             <menuitem action="Quit"/>
           </menu>
           <menu action="View">
@@ -287,10 +295,10 @@ class GuiPdb:
     def norestart(self):
         self.running = False
     
-    def restart(self, widget=None):
-        #self.running = True
-        print 'Restart'
-        self.outputbuffer.set_text('')
+    #def restart(self, widget=None):
+    #    #self.running = True
+    #    print 'Restart'
+    #    self.outputbuffer.set_text('')
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
@@ -329,6 +337,7 @@ class GuiPdb:
                 "Toggle breakpoint"
                 "clear from dictionary"
             elif self.clearbpsuccess == False:
+            
                 "Error message"
             else:
                 print 'Critical Error'
@@ -348,9 +357,14 @@ class GuiPdb:
 
     def restart_click(self, widget, data=None):
         print('Restart')
-        self.debuggee_send('restart')
-        #self.debuggee.send('restart\n')
-        #self.handle_debuggee_output()
+        self.outputbuffer.set_text('')
+        self.debugbuffer.set_text('')
+        self.timelinebox.reset()
+        txt = open(self.filename, 'r').read()
+        self.textbuffer.set_text(txt)
+        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
+        self.handle_debuggee_output(ignorelines=0)
+        
 
     def next_click(self, widget, data=None):
         print('Next')
@@ -392,8 +406,7 @@ class GuiPdb:
         #if not self.running:
         #    print 'Debuggee is not running'
         #    return 
-        #self.debuggee.sen
-        d('step\n')
+        #self.debuggee.send('step\n')
         #print 'Debuggee step sended'
         #self.handle_debuggee_output()
         #print('Step')
@@ -587,6 +600,34 @@ class GuiPdb:
     #        e[1]='white'
     #    self.treestore.append(None, (name,'green'))
     
+    def open_clicked(self, widget, data=None):
+        def chooser_cancel(widget, data=None):
+            chooser.destroy()
+
+        def chooser_ok(widget, data=None):
+            print "chooser ok", chooser.get_filename()
+            self.filename = chooser.get_filename()
+            self.outputbuffer.set_text('')
+            self.debugbuffer.set_text('')
+            self.timelinebox.reset()
+            txt = open(self.filename, 'r').read()
+            self.textbuffer.set_text(txt)
+            self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
+            self.handle_debuggee_output(ignorelines=0)
+            chooser.destroy()
+        print "open clicked"
+        chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
+        chooser.set_current_folder("/home/patrick/myprogs/gui")
+        okbutton = gtk.Button(stock=gtk.STOCK_OK)
+        okbutton.connect("clicked", chooser_ok)
+        okbutton.show()
+        cancelbutton = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancelbutton.connect("clicked", chooser_cancel)
+        cancelbutton.show()
+        chooser.action_area.pack_start(cancelbutton, False, False, 0)
+        chooser.action_area.pack_start(okbutton, False, False, 0)
+        chooser.show()
+        
     def changefontdlg(self, widget, data=None):
         #print "Change font dialog"
         #window = gtk.FontSelectionDialog("Change font for application")
@@ -609,6 +650,7 @@ class GuiPdb:
         window = self.font_dialog
         if not (window.flags() & gtk.VISIBLE):
             window.show()
+        
         else:
             window.destroy()
             self.font_dialog = None
@@ -639,7 +681,7 @@ class GuiPdb:
         entry.set_text('')
         entry.set_sensitive(False)
         self.handle_debuggee_output(ignorelines=0)
-        #
+        
         #print "returned from handle_debuggee_output"
     
     def lbvpane_expose(self, pane, event):
@@ -651,6 +693,7 @@ class GuiPdb:
             self.lbvpane_expose_handlerid)
     
     def __init__(self, filename):
+        self.filename = filename
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=None)
         
         self.running = True
@@ -673,6 +716,8 @@ class GuiPdb:
         # Create actions
         actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None,
                                   'Quit the Program', self.destroy),
+                                 ('Open', gtk.STOCK_OPEN, '_Open ...', None,
+                                  'Open a new file for debugging', self.open_clicked),
                                  ('File', None, '_File'),
                                  ('View', None, '_View'),
                                  ('ChangeFont', None, 'Change Font ...', None, 'Change Font', self.changefontdlg),
