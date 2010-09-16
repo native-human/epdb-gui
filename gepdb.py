@@ -14,48 +14,6 @@ import keyword, token, tokenize, cStringIO, string
 import pexpect
 import re
 import argparse
-#
-#class RestartDlg(gtk.Dialog):
-#    def __init__(self, parent):
-#        gtk.Dialog.__init__(self, title='Restart', parent=None, flags=0)
-#        self.prnt = parent
-#        restartbutton = gtk.Button('Restart')
-#        restartbutton.connect("clicked", self.restart_button_clicked)
-#        self.action_area.pack_start(restartbutton, True, True, 0)
-#        norestartbutton = gtk.Button("Don't restart")
-#        norestartbutton.connect("clicked", self.norestart_button_clicked)
-#        self.action_area.pack_start(norestartbutton, True, True, 0)
-#        norestartbutton.show()
-#        restartbutton.show()
-#        textlabel = gtk.Label('You have finished the end of the program. Do you want to restart?')
-#        self.vbox.pack_start(textlabel, True, True, 0)
-#        textlabel.show()
-#        
-#        #dialog.run()
-#    def restart_button_clicked(self, widget, data=None):
-#        print 'Restart clicked'
-#        self.prnt.restart()
-#        self.destroy()
-#    def norestart_button_clicked(self, widget, data=None):
-#        print 'No restart clicked'
-#        self.prnt.norestart()
-#        self.destroy()
-
-#class MessageDlg(gtk.Dialog):
-#    def __init__(self, title='', message='', action=None):
-#        
-#        gtk.Dialog.__init__(self, title=title)
-#        okbutton = gtk.Button('Ok')
-#        textlabel = gtk.Label(message)
-#        self.action_area.pack_start(okbutton, True, True, 0)
-#        if not action is None:
-#            print 'Register callback'
-#            okbutton.connect('clicked', action)
-#        self.vbox.pack_start(textlabel, True, True, 0)
-#        okbutton.connect('clicked', lambda x: self.destroy())
-#
-#        textlabel.show()
-#        okbutton.show()
     
 class Toolbar(gtk.HBox):
     def __init__(self, prnt):
@@ -75,7 +33,6 @@ class Toolbar(gtk.HBox):
         self.cont.connect("clicked", self.prnt.continue_click, None)
         self.restart = gtk.Button("restart")
         self.restart.connect("clicked", self.prnt.restart_click, None)
-        #self.buttonbox = gtk.HBox()
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
         self.pack_start(self.rstep, False, False, 0)
@@ -89,9 +46,9 @@ class Toolbar(gtk.HBox):
         self.restart.show()
         self.rcontinue.show()
         self.cont.show()
-        #self.buttonbox.show()
         self.rstep.show()
         self.show()
+
     def modify_font(self, font):
         print "Modify font"
         print "Child", self.next.child
@@ -102,7 +59,50 @@ class Toolbar(gtk.HBox):
         self.rstep.child.modify_font(font)
         self.rnext.child.modify_font(font)
         self.restart.child.modify_font(font)
+
+class ResourceBox(gtk.VBox):
+    def __init__(self, prnt):
+        gtk.VBox.__init__(self)
+        self.prnt = prnt
+
+        self.treestore = gtk.TreeStore(str, str)
+        self.treestore.append(None, ('Test','Loc'))
+        self.var_renderer = gtk.CellRendererText()
+        #self.timeline_renderer.set_property('background', 'red')
+        self.lbl = gtk.Label('Resources')
+        self.lbl.show()
+        self.treeview = gtk.TreeView(self.treestore)
+        self.treeview.set_headers_visible(False)
         
+        self.treeview.show()
+        #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
+        self.treedict = {}
+        self.tvcolumn1 = gtk.TreeViewColumn('Column 0', self.var_renderer, text=0)
+        self.tvcolumn2 = gtk.TreeViewColumn('Column 1', self.var_renderer, text=1)
+        
+        self.treeview.append_column(self.tvcolumn1)
+        self.treeview.append_column(self.tvcolumn2)
+        
+        #self.pack_start(self.timelinebox, False, False, 0)
+        self.pack_start(self.lbl, False, False, 0)
+        self.pack_start(self.treeview, True, True, 0)
+        self.show()
+
+    def update_resources(self):
+        "Send to the debuggee the request to update the resources"
+        self.prnt.debuggee_send('resources', update=False)
+    
+    def add_resource(self, type, location):
+        "Add a resource to the store"
+        self.treestore.append(None, (type, location))
+        
+    def clear_resources(self):
+        "Clears all resources from the window"
+        self.treestore.clear()
+        
+    def modify_font(self, font_desc):
+        self.treeview.modify_font(font_desc)
+        self.lbl.modify_font(font_desc)        
 
 class Varbox(gtk.VBox):
     def __init__(self, prnt):
@@ -158,8 +158,9 @@ class Varbox(gtk.VBox):
         for var in self.treestore:
             #print var, var[0]
             #print 'p %s\n' % var[0]
-            self.prnt.debuggee.send('p %s\n' % var[0])
-            self.prnt.handle_debuggee_output()
+            self.prnt.debuggee_send('p %s\n' % var[0], update=False)
+            #self.prnt.debuggee.send('p %s\n' % var[0])
+            #self.prnt.handle_debuggee_output()
     
     def update_variable(self, var, value):
         #print 'update variable', self.treestore.get(self.treedict[var],0,1)
@@ -169,6 +170,12 @@ class Varbox(gtk.VBox):
     def update_variable_error(self, var):
         self.treestore.set(self.treedict[var], 2, 'red')
         self.treestore.set(self.treedict[var], 1, None)
+
+    def modify_font(self, font_desc):
+        self.treeview.modify_font(font_desc)
+        self.entry.modify_font(font_desc)
+        self.addbutton.child.modify_font(font_desc)
+        self.lbl.modify_font(font_desc)
 
 class TimelineBox(gtk.VBox):
     def __init__(self, prnt):
@@ -183,7 +190,6 @@ class TimelineBox(gtk.VBox):
                      None)
                     ])
         
-        #print 'Try getting popup'
         self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
         #print 'popup', self.popup
         self.lbl = gtk.Label("Timelines")
@@ -269,6 +275,12 @@ class TimelineBox(gtk.VBox):
             e[1]='white'
         self.treestore.append(None, (name,'green'))
     
+    def modify_font(self, font_desc):
+        self.treeview.modify_font(font_desc)
+        self.addbutton.child.modify_font(font_desc)
+        self.entry.modify_font(font_desc)
+        self.lbl.modify_font(font_desc)
+    
 class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
@@ -294,11 +306,6 @@ class GuiPdb:
         </ui>'''
     def norestart(self):
         self.running = False
-    
-    #def restart(self, widget=None):
-    #    #self.running = True
-    #    print 'Restart'
-    #    self.outputbuffer.set_text('')
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
@@ -344,15 +351,7 @@ class GuiPdb:
             #print "Deleting breakpoints not implemented yet"
 
     def rstep_click(self, widget, data=None):
-        # dialog =  gtk.Dialog(title="Restart", parent=None, flags=0)
-        #self.dialog = dialog
-        
-        #dialog = RestartDlg(self)
-        #dialog.run()
         self.debuggee_send('rstep')
-        #self.debuggee.send('rstep\n')
-        #self.handle_debuggee_output()
-        #self.varbox.update_all_variables()
         print('rstep')
 
     def restart_click(self, widget, data=None):
@@ -370,47 +369,19 @@ class GuiPdb:
         print('Next')
         self.debuggee_send('next')
 
-        #self.debuggee.send('next\n')
-        #self.handle_debuggee_output()
-        #self.varbox.update_all_variables()
-
     def rnext_click(self, widget, data=None):
-        #dlg = MessageDlg(title='Restart', message='The program is restarting now')
-        #dlg.run()
         print('RNext')
         self.debuggee_send('rnext')
-        #self.debuggee.send('rnext\n')
-        #self.handle_debuggee_output()
-        #self.varbox.update_all_variables()
 
     def continue_click(self, widget, data=None):
         print('Continue')
         self.debuggee_send('continue')
-        #self.debuggee.send('continue\n')
-        #self.handle_debuggee_output()
-        #print self.text.get_visible_rect()
-        #self.varbox.update_all_variables()
-
     def rcontinue_click(self, widget, data=None):
         self.debuggee_send('rcontinue')
-        #self.debuggee.send('rcontinue\n')
-        #self.handle_debuggee_output()
-        #self.iter = self.textbuffer.get_iter_at_line(5)
-        #self.textbuffer.place_cursor(self.iter)
-        #self.varbox.update_all_variables()
     
     def step_click(self, widget, data=None):
         print 'Step clicked'
         self.debuggee_send('step')
-        #print 'Step finished'
-        #if not self.running:
-        #    print 'Debuggee is not running'
-        #    return 
-        #self.debuggee.send('step\n')
-        #print 'Debuggee step sended'
-        #self.handle_debuggee_output()
-        #print('Step')
-        #self.varbox.update_all_variables()
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
@@ -435,17 +406,22 @@ class GuiPdb:
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
-    def debuggee_send(self, line):
+    def debuggee_send(self, line, update=True):
         if not line.endswith('\n'):
             line += '\n'
         #print "SEND LINE TO DEBUGGEE: ", line
         self.debuggee.send(line)
         returnmode = self.handle_debuggee_output()
         if returnmode == 'normal':
-            self.varbox.update_all_variables()
+            if update:
+                self.varbox.update_all_variables()
+                self.resourcebox.update_resources()
         elif returnmode == 'intermediate':
-        #    print 'INTERMEDIATE RETURN'
+            print 'INTERMEDIATE RETURN'
             pass
+        else:
+            print "Unknown return mode"
+            
     def handle_debuggee_output(self, ignorelines=1):
         #print 'handle_output called'
         returnmode = 'normal'
@@ -488,6 +464,8 @@ class GuiPdb:
                     #print "interesting line '{0}'".format(line.replace(" ", '_'))
                     prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
+                    resm = re.match("#resource#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
+
                     #if prm:
                     #    print "PRM", line
                     #else:
@@ -504,6 +482,11 @@ class GuiPdb:
                             'Mode: <span color="red">{0}</span>'.format('INPUT'))
                         returnmode = 'intermediate'
                         break
+                    elif line.startswith("#show resources#"):
+                        self.resourcebox.clear_resources()
+                    elif resm:
+                        #print "resm", resm.group(1), resm.group(2)
+                        self.resourcebox.add_resource(resm.group(1), resm.group(2))
                     elif line.startswith('#-->'):
                         self.outputbuffer.set_text('')
                     elif line.startswith('#->'):
@@ -662,14 +645,8 @@ class GuiPdb:
             if font_desc:
                 self.text.modify_font(font_desc)
                 self.debug.modify_font(font_desc)
-                self.varbox.treeview.modify_font(font_desc)
-                self.varbox.entry.modify_font(font_desc)
-                self.varbox.addbutton.child.modify_font(font_desc)
-                self.varbox.lbl.modify_font(font_desc)
-                self.timelinebox.treeview.modify_font(font_desc)
-                self.timelinebox.addbutton.child.modify_font(font_desc)
-                self.timelinebox.entry.modify_font(font_desc)
-                self.timelinebox.lbl.modify_font(font_desc)
+                self.varbox.modify_font(font_desc)
+                self.timelinebox.modify_font(font_desc)
                 self.toolbar.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
@@ -729,16 +706,21 @@ class GuiPdb:
         
         self.toplevelbox = gtk.VBox()
         #self.toplevelhbox = gtk.HBox()
-        self.toplevelhpaned = gtk.HPaned()
+        self.toplevelhpaned1 = gtk.HPaned()
+        self.toplevelhpaned2 = gtk.HPaned()
         self.leftbox = gtk.VBox()
         self.lbvpane = gtk.VPaned()
         self.timelinebox = TimelineBox(self)
         self.varbox = Varbox(self)
+        self.resourcebox = ResourceBox(self)
         self.leftbox.show()
         self.leftbox.pack_start(self.lbvpane, True, True, 0)
         self.lbvpane.pack1(self.timelinebox)
         self.lbvpane.pack2(self.varbox)
         self.lbvpane.show()
+        self.rightbox = gtk.VBox()
+        self.rightbox.pack_start(self.resourcebox)
+        self.rightbox.show()
         #self.leftbox.pack_start(self.timelinebox, True, True, 0)
         #self.leftbox.pack_start(self.varbox, True, True, 0)
         
@@ -749,7 +731,7 @@ class GuiPdb:
         self.output.set_editable(False)
         #self.output.set_property("height-request", 80)
     
-        self.rightbox = gtk.VBox()
+        self.mainbox = gtk.VBox()
     
         self.textbuffer = gtksourceview2.Buffer()
         self.text = gtksourceview2.View(self.textbuffer)
@@ -810,7 +792,7 @@ class GuiPdb:
         self.notebook.append_page(self.outputbox, self.output_tab_lbl)
         self.notebook.append_page(self.debug_sw, self.debug_tab_lbl)
         
-        self.rightbox.pack_start(self.vpaned, True, True, 0)
+        self.mainbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.sw, resize=True, shrink=True)
         #self.vpaned.pack2(self.output, resize=False, shrink=False)
         self.vpaned.pack2(self.notebook, resize=False, shrink=False)
@@ -818,8 +800,10 @@ class GuiPdb:
         # self.rightbox.pack_start(self.buttonbox, False, False, 0)
         #self.rightbox.pack_start(self.output, False, False, 0)
         
-        self.toplevelhpaned.pack1(self.leftbox)
-        self.toplevelhpaned.pack2(self.rightbox)
+        self.toplevelhpaned1.pack1(self.leftbox, resize=False, shrink=False)
+        self.toplevelhpaned1.pack2(self.mainbox, resize=True, shrink=True)
+        self.toplevelhpaned2.pack1(self.toplevelhpaned1, resize=True, shrink=True)
+        self.toplevelhpaned2.pack2(self.rightbox, resize=False, shrink=False)
         #self.toplevelhbox.pack_start(self.leftbox, False, False, 0)
         #self.toplevelhbox.pack_start(self.rightbox, True, True, 0)
         
@@ -846,14 +830,14 @@ class GuiPdb:
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
         #self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
-        self.toplevelbox.pack_start(self.toplevelhpaned, True, True, 0)
+        self.toplevelbox.pack_start(self.toplevelhpaned2, True, True, 0)
         self.toplevelbox.pack_start(self.statusbar, False, False, 0)
         #self.window.add(self.text)
 
         #self.window.add(self.toolbar)
         self.window.add(self.toplevelbox)
         self.window.show()
-        self.rightbox.show()
+        self.mainbox.show()
         self.text.show()
         self.output.show()
         self.output_sw.show(
@@ -863,7 +847,8 @@ class GuiPdb:
         self.debug_sw.show()
         #self.treeview.show()
         #self.toplevelhbox.show()
-        self.toplevelhpaned.show()
+        self.toplevelhpaned1.show()
+        self.toplevelhpaned2.show()
         self.sw.show()
         self.vpaned.show()
         self.toplevelbox.show()
