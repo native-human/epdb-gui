@@ -60,6 +60,51 @@ class Toolbar(gtk.HBox):
         self.rnext.child.modify_font(font)
         self.restart.child.modify_font(font)
 
+
+class SnapshotBox(gtk.VBox):
+    def __init__(self, prnt):
+        gtk.VBox.__init__(self)
+        self.prnt = prnt
+
+        self.treestore = gtk.TreeStore(str, str)
+        self.treestore.append(None, ('Test','Loc'))
+        self.var_renderer = gtk.CellRendererText()
+        #self.timeline_renderer.set_property('background', 'red')
+        self.lbl = gtk.Label('Snapshots')
+        self.lbl.show()
+        self.treeview = gtk.TreeView(self.treestore)
+        self.treeview.set_headers_visible(False)
+        
+        self.treeview.show()
+        #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
+        self.treedict = {}
+        self.tvcolumn1 = gtk.TreeViewColumn('Column 0', self.var_renderer, text=0)
+        self.tvcolumn2 = gtk.TreeViewColumn('Column 1', self.var_renderer, text=1)
+        
+        self.treeview.append_column(self.tvcolumn1)
+        self.treeview.append_column(self.tvcolumn2)
+        
+        #self.pack_start(self.timelinebox, False, False, 0)
+        self.pack_start(self.lbl, False, False, 0)
+        self.pack_start(self.treeview, True, True, 0)
+        self.show()
+
+    def update_snapshots(self):
+        "Send to the debuggee the request to update the resources"
+        self.prnt.debuggee_send('timeline_snapshots', update=False)
+    
+    def add_snapshot(self, id, ic):
+        "Add a resource to the store"
+        self.treestore.append(None, (id, ic))
+        
+    def clear_snapshots(self):
+        "Clears all resources from the window"
+        self.treestore.clear()
+        
+    def modify_font(self, font_desc):
+        self.treeview.modify_font(font_desc)
+        self.lbl.modify_font(font_desc)
+
 class ResourceBox(gtk.VBox):
     def __init__(self, prnt):
         gtk.VBox.__init__(self)
@@ -416,6 +461,7 @@ class GuiPdb:
             if update:
                 self.varbox.update_all_variables()
                 self.resourcebox.update_resources()
+                self.snapshotbox.update_snapshots()
         elif returnmode == 'intermediate':
             print 'INTERMEDIATE RETURN'
             pass
@@ -465,7 +511,7 @@ class GuiPdb:
                     prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
                     resm = re.match("#resource#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
-
+                    tsnapm = re.match("#tsnapshot#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
                     #if prm:
                     #    print "PRM", line
                     #else:
@@ -484,9 +530,14 @@ class GuiPdb:
                         break
                     elif line.startswith("#show resources#"):
                         self.resourcebox.clear_resources()
+                    elif line.startswith("#timeline_snapshots#"):
+                        self.snapshotbox.clear_snapshots()
                     elif resm:
                         #print "resm", resm.group(1), resm.group(2)
                         self.resourcebox.add_resource(resm.group(1), resm.group(2))
+                    elif tsnapm:
+                        print tsnapm, tsnapm.group(1), tsnapm.group(2)
+                        self.snapshotbox.add_snapshot(tsnapm.group(1), tsnapm.group(2))
                     elif line.startswith('#-->'):
                         self.outputbuffer.set_text('')
                     elif line.startswith('#->'):
@@ -518,6 +569,8 @@ class GuiPdb:
                         var = perrm.group(1)
                         #print var
                         self.varbox.update_variable_error(var)
+                    else:
+                        'print "OTHER LINE", line'
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
@@ -648,6 +701,8 @@ class GuiPdb:
                 self.varbox.modify_font(font_desc)
                 self.timelinebox.modify_font(font_desc)
                 self.toolbar.modify_font(font_desc)
+                self.resourcebox.modify_font(font_desc)
+                self.snapshotbox.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
@@ -719,7 +774,12 @@ class GuiPdb:
         self.lbvpane.pack2(self.varbox)
         self.lbvpane.show()
         self.rightbox = gtk.VBox()
-        self.rightbox.pack_start(self.resourcebox)
+        self.snapshotbox = SnapshotBox(self)
+        self.rbvpane = gtk.VPaned()
+        self.rbvpane.pack1(self.resourcebox, resize=True, shrink=True)
+        self.rbvpane.pack2(self.snapshotbox, resize=True, shrink=True)
+        self.rbvpane.show()
+        self.rightbox.pack_start(self.rbvpane)
         self.rightbox.show()
         #self.leftbox.pack_start(self.timelinebox, True, True, 0)
         #self.leftbox.pack_start(self.varbox, True, True, 0)
