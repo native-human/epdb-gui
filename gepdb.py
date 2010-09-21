@@ -100,7 +100,7 @@ class SnapshotBox(gtk.VBox):
     def clear_snapshots(self):
         "Clears all resources from the window"
         self.treestore.clear()
-        
+    
     def modify_font(self, font_desc):
         self.treeview.modify_font(font_desc)
         self.lbl.modify_font(font_desc)
@@ -187,6 +187,11 @@ class Varbox(gtk.VBox):
         self.pack_start(self.treeview, True, True, 0)
         self.show()
         
+    
+    def reset(self):
+        self.treestore.clear()
+        self.treedict = {}
+        
     def on_varadd_clicked(self, widget, data=None):
         #print 'Add variable', self.entry.get_text()
         txt = self.entry.get_text()
@@ -196,6 +201,7 @@ class Varbox(gtk.VBox):
         else:
             id = self.treestore.append(None, (self.entry.get_text(), None, 'white'))
             self.treedict[txt] = id
+            self.entry.set_text('')
         self.update_all_variables()
         #self.update_variable(txt, 'blup')
 
@@ -301,13 +307,18 @@ class TimelineBox(gtk.VBox):
         else:
             #print self.prnt.newtimelinesuc
             "TODO put failed message into status line"
+        self.entry.set_text('')
+        self.prnt.snapshotbox.clear_snapshots()
+        self.prnt.snapshotbox.update_snapshots()
+
 
     def on_treeview_activated(self, treeview, row, col):
         #print "treeview activated", row, col
         model = treeview.get_model()
-        self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
         self.timelineswitchsuc = None
-        self.prnt.handle_debuggee_output()
+        #self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
+        #self.prnt.handle_debuggee_output()
+        self.prnt.debuggee_send('switch_timeline %s\n' % model[row][0])
         if self.prnt.timelineswitchsuc:
             for e in self.treestore:
                 e[1]='white'
@@ -379,6 +390,7 @@ class GuiPdb:
                 return
             
             self.clearbpsuccess = None
+
             self.debuggee.send('clear {0}\n'.format(bpno))
             self.handle_debuggee_output()
             if self.clearbpsuccess == True:
@@ -407,8 +419,8 @@ class GuiPdb:
         txt = open(self.filename, 'r').read()
         self.textbuffer.set_text(txt)
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
-        self.handle_debuggee_output(ignorelines=0)
-        
+        #self.handle_debuggee_output(ignorelines=0)
+        self.debuggee_send()
 
     def next_click(self, widget, data=None):
         print('Next')
@@ -427,6 +439,7 @@ class GuiPdb:
     def step_click(self, widget, data=None):
         print 'Step clicked'
         self.debuggee_send('step')
+        
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
@@ -451,17 +464,22 @@ class GuiPdb:
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
-    def debuggee_send(self, line, update=True):
-        if not line.endswith('\n'):
-            line += '\n'
-        #print "SEND LINE TO DEBUGGEE: ", line
-        self.debuggee.send(line)
-        returnmode = self.handle_debuggee_output()
+    def debuggee_send(self, line=None, update=True):
+        if line:
+            if not line.endswith('\n'):
+                line += '\n'
+            ignorelines = 1
+            #print "SEND LINE TO DEBUGGEE: ", line
+            self.debuggee.send(line)
+        else:
+            ignorelines = 0
+        returnmode = self.handle_debuggee_output(ignorelines=ignorelines)
         if returnmode == 'normal':
             if update:
                 self.varbox.update_all_variables()
                 self.resourcebox.update_resources()
                 self.snapshotbox.update_snapshots()
+                print "NORMAL RETURN"
         elif returnmode == 'intermediate':
             print 'INTERMEDIATE RETURN'
             pass
@@ -587,6 +605,7 @@ class GuiPdb:
         except pexpect.TIMEOUT:
             print "TIMEOUT"
             #gtk.main_quit()
+        self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         return returnmode
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
@@ -648,9 +667,15 @@ class GuiPdb:
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
             self.textbuffer.set_text(txt)
+            self.snapshotbox.clear_snapshots()
+            self.resourcebox.clear_resources()
+            self.timelinebox.reset()
+            self.varbox.reset()
             self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
-            self.handle_debuggee_output(ignorelines=0)
+            #self.handle_debuggee_output(ignorelines=0)
+            self.debuggee_send()
             chooser.destroy()
+            
         print "open clicked"
         chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
         chooser.set_current_folder("/home/patrick/myprogs/gui")
@@ -712,7 +737,8 @@ class GuiPdb:
         self.debuggee.send(entry.get_text()+'\n')
         entry.set_text('')
         entry.set_sensitive(False)
-        self.handle_debuggee_output(ignorelines=0)
+        self.debuggee_send()
+        #self.handle_debuggee_output(ignorelines=0)
         
         #print "returned from handle_debuggee_output"
     
@@ -812,6 +838,7 @@ class GuiPdb:
         self.text.set_show_line_marks(True)
         self.text.set_show_line_numbers(True)
         self.text.set_highlight_current_line(True)
+        self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         self.vpaned = gtk.VPaned()
 
         self.sw = gtk.ScrolledWindow()
@@ -914,7 +941,8 @@ class GuiPdb:
         self.toplevelbox.show()
         self.notebook.show()
         
-        self.handle_debuggee_output(ignorelines=0)
+        self.debuggee_send()
+        #self.handle_debuggee_output(ignorelines=0)
         
         #mark = self.textbuffer.create_source_mark("b1", "breakpoint", self.textbuffer.get_iter_at_line(1))
         self.breakpointdict = {} # lineno: bpno
