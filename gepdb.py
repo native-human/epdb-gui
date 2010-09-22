@@ -675,7 +675,7 @@ class GuiPdb:
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
             # Delete breakpoints
-            self.breakpointdict[self.breakpointlineno]
+            self.breakpointdict = {}
             start = self.textbuffer.get_start_iter()
             end = self.textbuffer.get_end_iter()
             self.textbuffer.remove_source_marks(start, end, category=None)
