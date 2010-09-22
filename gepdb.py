@@ -132,6 +132,7 @@ class ResourceBox(gtk.VBox):
         self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.treeview, True, True, 0)
         self.iter_dict = {}
+        self.rows = 0
         self.show()
 
     def update_resources(self):
@@ -142,15 +143,19 @@ class ResourceBox(gtk.VBox):
         "Add a resource to the store"
         iter = self.treestore.append(None, (type, location))
         self.iter_dict[(type,location)] = iter
+        self.rows += 1
         #self.treestore.append(iter, ('Test', 'Test'))
         #self.treestore.append(iter, ('Test', 'Test'))
         
     def add_resource_entry(self, type, location, ic, id):
         "Add resource data to the resource"
         self.treestore.append(self.iter_dict[(type,location)], (ic, id))
+        for i in range(self.rows):
+            self.treeview.expand_row(str(i), True)
     
     def clear_resources(self):
         "Clears all resources from the window"
+        self.rows = 0
         self.iter_dict = {}
         self.treestore.clear()
         
@@ -531,7 +536,7 @@ class GuiPdb:
                     print line
                     self.append_debugbuffer(line)
                 elif line.startswith('#'):
-                    self.append_debugbuffer(line[1:])
+                    #self.append_debugbuffer(line[1:])
                     #Breakpoint 1 at /home/patrick/myprogs/epdb/example.py:8
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
@@ -597,6 +602,7 @@ class GuiPdb:
                         self.varbox.update_variable_error(var)
                     else:
                         'print "OTHER LINE", line'
+                        self.append_debugbuffer(line[1:])
                 elif line.startswith('--Return--'):
                     print 'Return'
                     self.append_output(line)
