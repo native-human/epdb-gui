@@ -131,6 +131,7 @@ class ResourceBox(gtk.VBox):
         #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.treeview, True, True, 0)
+        self.iter_dict = {}
         self.show()
 
     def update_resources(self):
@@ -139,10 +140,18 @@ class ResourceBox(gtk.VBox):
     
     def add_resource(self, type, location):
         "Add a resource to the store"
-        self.treestore.append(None, (type, location))
+        iter = self.treestore.append(None, (type, location))
+        self.iter_dict[(type,location)] = iter
+        #self.treestore.append(iter, ('Test', 'Test'))
+        #self.treestore.append(iter, ('Test', 'Test'))
         
+    def add_resource_entry(self, type, location, ic, id):
+        "Add resource data to the resource"
+        self.treestore.append(self.iter_dict[(type,location)], (ic, id))
+    
     def clear_resources(self):
         "Clears all resources from the window"
+        self.iter_dict = {}
         self.treestore.clear()
         
     def modify_font(self, font_desc):
@@ -299,9 +308,9 @@ class TimelineBox(gtk.VBox):
     def on_timeline_add_click(self, widget, data=None):
         #print 'Add clicked', self.entry.get_text()
         self.prnt.statusbar.push(self.prnt.context_id, "Add clicked")
-        self.prnt.debuggee.send('newtimeline %s\n' % self.entry.get_text())
         self.prnt.newtimelinesuc = None
-        self.prnt.handle_debuggee_output()
+        self.prnt.debuggee_send('newtimeline %s\n' % self.entry.get_text())
+        #self.prnt.handle_debuggee_output()
         if self.prnt.newtimelinesuc == True:
             self.add_timeline(self.entry.get_text())
         else:
@@ -379,6 +388,7 @@ class GuiPdb:
             if self.breakpointsuccess:
                 mark = self.textbuffer.create_source_mark(None, "breakpoint",
                         self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
+                print "Make breakpoint with no", self.breakpointno
                 self.breakpointdict[self.breakpointlineno] = self.breakpointno
             else:
                 "TODO put can't set breakpoint into status line"
@@ -390,9 +400,10 @@ class GuiPdb:
                 return
             
             self.clearbpsuccess = None
-
-            self.debuggee.send('clear {0}\n'.format(bpno))
-            self.handle_debuggee_output()
+            print "Clear Breakpoint {0}".format(bpno)
+            self.debuggee_send('clear {0}\n'.format(bpno))
+            #self.debuggee.send('clear {0}\n'.format(bpno))
+            #self.handle_debuggee_output()
             if self.clearbpsuccess == True:
                 start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
                 end = self.textbuffer.get_iter_at_line(self.breakpointlineno)
@@ -401,7 +412,7 @@ class GuiPdb:
                 "Toggle breakpoint"
                 "clear from dictionary"
             elif self.clearbpsuccess == False:
-            
+                print "Couldn't delete breakpoint"
                 "Error message"
             else:
                 print 'Critical Error'
@@ -529,13 +540,8 @@ class GuiPdb:
                     prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
                     resm = re.match("#resource#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
+                    resem = re.match("#resource_entry#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
                     tsnapm = re.match("#tsnapshot#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
-                    #if prm:
-                    #    print "PRM", line
-                    #else:
-                    #    print "no prm", prm, repr(line)
-                    #print line
-                    
                     
                     if line.startswith('#*** Blank or comment'):
                         self.breakpointsuccess = False
@@ -553,6 +559,8 @@ class GuiPdb:
                     elif resm:
                         #print "resm", resm.group(1), resm.group(2)
                         self.resourcebox.add_resource(resm.group(1), resm.group(2))
+                    elif resem:
+                        self.resourcebox.add_resource_entry(resem.group(1), resem.group(2), resem.group(3), resem.group(4))
                     elif tsnapm:
                         print tsnapm, tsnapm.group(1), tsnapm.group(2)
                         self.snapshotbox.add_snapshot(tsnapm.group(1), tsnapm.group(2))
@@ -666,7 +674,13 @@ class GuiPdb:
             self.debugbuffer.set_text('')
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
+            # Delete breakpoints
+            self.breakpointdict[self.breakpointlineno]
+            start = self.textbuffer.get_start_iter()
+            end = self.textbuffer.get_end_iter()
+            self.textbuffer.remove_source_marks(start, end, category=None)
             self.textbuffer.set_text(txt)
+            
             self.snapshotbox.clear_snapshots()
             self.resourcebox.clear_resources()
             self.timelinebox.reset()
