@@ -75,6 +75,10 @@ class SnapshotBox(gtk.VBox):
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         
+        self.scrolledwindow = gtk.ScrolledWindow()
+        self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolledwindow.show()
+        
         self.treeview.show()
         #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
         self.treedict = {}
@@ -84,9 +88,11 @@ class SnapshotBox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn1)
         self.treeview.append_column(self.tvcolumn2)
         
+        self.scrolledwindow.add(self.treeview)
+        
         #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
-        self.pack_start(self.treeview, True, True, 0)
+        self.pack_start(self.scrolledwindow, True, True, 0)
         self.show()
 
     def update_snapshots(self):
@@ -119,6 +125,10 @@ class ResourceBox(gtk.VBox):
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         
+        self.scrolledwindow = gtk.ScrolledWindow()
+        self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolledwindow.show()
+        
         self.treeview.show()
         #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
         self.treedict = {}
@@ -130,7 +140,8 @@ class ResourceBox(gtk.VBox):
         
         #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
-        self.pack_start(self.treeview, True, True, 0)
+        self.pack_start(self.scrolledwindow, True, True, 0)
+        self.scrolledwindow.add(self.treeview)
         self.iter_dict = {}
         self.rows = 0
         self.show()
@@ -163,6 +174,7 @@ class ResourceBox(gtk.VBox):
         self.treeview.modify_font(font_desc)
         self.lbl.modify_font(font_desc)        
 
+
 class Varbox(gtk.VBox):
     def __init__(self, prnt):
         gtk.VBox.__init__(self)
@@ -173,6 +185,11 @@ class Varbox(gtk.VBox):
         self.var_renderer = gtk.CellRendererText()
         #self.timeline_renderer.set_property('background', 'red')
         self.lbl = gtk.Label('Variables')
+        
+        self.scrolledwindow = gtk.ScrolledWindow()
+        self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolledwindow.show()
+        
         self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
@@ -198,7 +215,8 @@ class Varbox(gtk.VBox):
         #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.entrybox, False, False, 0)
-        self.pack_start(self.treeview, True, True, 0)
+        self.pack_start(self.scrolledwindow, True, True, 0)
+        self.scrolledwindow.add(self.treeview)
         self.show()
         
     
@@ -264,6 +282,10 @@ class TimelineBox(gtk.VBox):
         self.timeline_renderer = gtk.CellRendererText()
         self.timeline_renderer.set_property('background', 'red')
         
+        self.scrolledwindow = gtk.ScrolledWindow()
+        self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.scrolledwindow.show()
+        
         self.treeview = gtk.TreeView(self.treestore)  # TODO rename to timeline treeview
         self.treeview.set_headers_visible(False)
         self.treeview.connect('button-press-event', self.on_treeview_button_press_event)
@@ -288,7 +310,8 @@ class TimelineBox(gtk.VBox):
         self.treeview.show()
         self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.timelinebox, False, False, 0)
-        self.pack_start(self.treeview, True, True, 0)
+        self.pack_start(self.scrolledwindow, True, True, 0)
+        self.scrolledwindow.add(self.treeview)
         self.show()
     
     def reset(self):
@@ -351,6 +374,65 @@ class TimelineBox(gtk.VBox):
         self.entry.modify_font(font_desc)
         self.lbl.modify_font(font_desc)
     
+class OutputBox(gtk.Notebook):
+    def __init__(self, prnt):
+        gtk.Notebook.__init__(self)
+        self.prnt = prnt
+        self.debugbuffer = gtk.TextBuffer()
+        self.debug = gtk.TextView(self.debugbuffer)
+        self.debug.set_editable(False)
+        
+        self.debug_sw = gtk.ScrolledWindow()
+        self.debug_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.debug_sw.add(self.debug)
+        
+        self.outputbox = gtk.VBox()
+        self.outputbuffer = gtk.TextBuffer()
+        self.output = gtk.TextView(self.outputbuffer)
+        self.output.set_editable(False)
+    
+        self.output_sw = gtk.ScrolledWindow()
+        self.output_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.output_sw.add(self.output)
+        
+        self.input_entry = gtk.Entry()
+        self.input_entry.set_sensitive(False)
+        self.input_entry.show()
+        self.input_entry.connect("activate", self.input_entry_activate)
+        self.outputbox.pack_start(self.output_sw, True, True, 0)
+        self.outputbox.pack_start(self.input_entry, False, False, 0)
+        self.outputbox.show()
+        
+        #self.notebook = gtk.Notebook()
+        self.set_tab_pos(gtk.POS_TOP)
+        self.output_tab_lbl = gtk.Label('Output')
+        self.output_tab_lbl.show()
+        self.debug_tab_lbl = gtk.Label('Debug')
+        self.debug_tab_lbl.show()
+        
+        self.append_page(self.outputbox, self.output_tab_lbl)
+        self.append_page(self.debug_sw, self.debug_tab_lbl)
+        self.show()
+        self.output.show()
+        self.output_sw.show()
+        self.debug.show()
+        self.debug_sw.show()
+        
+    def input_entry_activate(self, entry):
+        # TODO change to debuggee_send
+        self.prnt.debuggee.send(entry.get_text()+'\n')
+        entry.set_text('')
+        entry.set_sensitive(False)
+        self.prnt.debuggee_send()
+    
+    def modify_font(self, font_desc):
+        self.debug.modify_font(font_desc)
+        self.output.modify_font(font_desc)
+        self.debug_tab_lbl.modify_font(font_desc)
+        self.output_tab_lbl.modify_font(font_desc)
+        self.input_entry.modify_font(font_desc)
+        
+        
 class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
@@ -429,7 +511,8 @@ class GuiPdb:
 
     def restart_click(self, widget, data=None):
         print('Restart')
-        self.outputbuffer.set_text('')
+        self.outputbuff
+        er.set_text('')
         self.debugbuffer.set_text('')
         self.timelinebox.reset()
         txt = open(self.filename, 'r').read()
@@ -551,8 +634,8 @@ class GuiPdb:
                     if line.startswith('#*** Blank or comment'):
                         self.breakpointsuccess = False
                     elif line.startswith("#expect input#"):
-                        self.input_entry.set_sensitive(True)
-                        self.input_entry.grab_focus()
+                        self.outputbox.input_entry.set_sensitive(True)
+                        self.outputbox.input_entry.grab_focus()
                         self.modelbl.set_markup(
                             'Mode: <span color="red">{0}</span>'.format('INPUT'))
                         returnmode = 'intermediate'
@@ -570,7 +653,7 @@ class GuiPdb:
                         print tsnapm, tsnapm.group(1), tsnapm.group(2)
                         self.snapshotbox.add_snapshot(tsnapm.group(1), tsnapm.group(2))
                     elif line.startswith('#-->'):
-                        self.outputbuffer.set_text('')
+                        self.outputbox.outputbuffer.set_text('')
                     elif line.startswith('#->'):
                         self.append_output(line[3:])
                     elif bpsuc:
@@ -631,16 +714,16 @@ class GuiPdb:
         self.textbuffer.place_cursor(self.lineiter)
 
     def append_output(self, txt):
-        iter = self.outputbuffer.get_end_iter()
+        iter = self.outputbox.outputbuffer.get_end_iter()
         print("append_txt", repr(txt))
-        self.outputbuffer.insert(iter, txt)
-        self.output.scroll_mark_onscreen(self.outputbuffer.get_insert())
+        self.outputbox.outputbuffer.insert(iter, txt)
+        self.outputbox.output.scroll_mark_onscreen(self.outputbox.outputbuffer.get_insert())
         #print 'inserted'
 
     def append_debugbuffer(self, txt):
-        iter = self.debugbuffer.get_end_iter()
-        self.debugbuffer.insert(iter, txt)
-        self.debug.scroll_mark_onscreen(self.debugbuffer.get_insert())
+        iter = self.outputbox.debugbuffer.get_end_iter()
+        self.outputbox.debugbuffer.insert(iter, txt)
+        self.outputbox.debug.scroll_mark_onscreen(self.outputbox.debugbuffer.get_insert())
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
 
     def button_release_sv(self, view, event):
@@ -742,25 +825,16 @@ class GuiPdb:
             font_desc = pango.FontDescription(self.font)
             if font_desc:
                 self.text.modify_font(font_desc)
-                self.debug.modify_font(font_desc)
+                #self.debug.modify_font(font_desc)
                 self.varbox.modify_font(font_desc)
                 self.timelinebox.modify_font(font_desc)
                 self.toolbar.modify_font(font_desc)
                 self.resourcebox.modify_font(font_desc)
                 self.snapshotbox.modify_font(font_desc)
+                self.outputbox.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
-        
-    def input_entry_activate(self, entry):
-        #print 'activate', entry.get_text()
-        self.debuggee.send(entry.get_text()+'\n')
-        entry.set_text('')
-        entry.set_sensitive(False)
-        self.debuggee_send()
-        #self.handle_debuggee_output(ignorelines=0)
-        
-        #print "returned from handle_debuggee_output"
     
     def lbvpane_expose(self, pane, event):
         print "lbvpane_expose", pane
@@ -830,13 +904,6 @@ class GuiPdb:
         #self.leftbox.pack_start(self.timelinebox, True, True, 0)
         #self.leftbox.pack_start(self.varbox, True, True, 0)
         
-        self.outputbuffer = gtk.TextBuffer()
-        self.output = gtk.TextView(self.outputbuffer)
-        #self.append_output('Blah')
-        #self.outputbuffer.set_text("Hallo Welt")
-        self.output.set_editable(False)
-        #self.output.set_property("height-request", 80)
-    
         self.mainbox = gtk.VBox()
     
         self.textbuffer = gtksourceview2.Buffer()
@@ -846,6 +913,7 @@ class GuiPdb:
         self.text.connect("move-cursor", self.cursor_moved)
         self.text.connect("button-release-event", self.text_clicked)
         self.text.set_editable(False)
+        self.text.show()
         
         #self.textbuffer = self.text.get_buffer()
         txt = open(filename, 'r').read()
@@ -860,49 +928,15 @@ class GuiPdb:
         self.text.set_highlight_current_line(True)
         self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         self.vpaned = gtk.VPaned()
-
         self.sw = gtk.ScrolledWindow()
         self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.sw.add(self.text)
         
-        self.debugbuffer = gtk.TextBuffer()
-        self.debug = gtk.TextView(self.debugbuffer)
-        self.debug.set_editable(False)
-        
-        self.debug_sw = gtk.ScrolledWindow()
-        self.debug_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        self.debug_sw.add(self.debug)
-        
-        self.outputbox = gtk.VBox()
-        self.output_sw = gtk.ScrolledWindow()
-        self.output_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        self.output_sw.add(self.output)
-        
-        self.input_entry = gtk.Entry()
-        #self.input_entry.set_editable(False)
-        #gray = gtk.gdk.Color(red=30000, green=30000, blue=30000, pixel=5)
-        #gray = gtk.gdk.Color('#999')
-        #self.input_entry.modify_bg(gtk.STATE_NORMAL, gray)
-        self.input_entry.set_sensitive(False)
-        self.input_entry.show()
-        self.input_entry.connect("activate", self.input_entry_activate)
-        self.outputbox.pack_start(self.output_sw, True, True, 0)
-        self.outputbox.pack_start(self.input_entry, True, True, 0)
-        self.outputbox.show()
-        
-        self.notebook = gtk.Notebook()
-        self.notebook.set_tab_pos(gtk.POS_TOP)
-        self.output_tab_lbl = gtk.Label('Output')
-        self.output_tab_lbl.show()
-        self.debug_tab_lbl = gtk.Label('Debug')
-        self.debug_tab_lbl.show()
-        self.notebook.append_page(self.outputbox, self.output_tab_lbl)
-        self.notebook.append_page(self.debug_sw, self.debug_tab_lbl)
-        
         self.mainbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.sw, resize=True, shrink=True)
         #self.vpaned.pack2(self.output, resize=False, shrink=False)
-        self.vpaned.pack2(self.notebook, resize=False, shrink=False)
+        self.outputbox = OutputBox(self)
+        self.vpaned.pack2(self.outputbox, resize=False, shrink=False)
         #self.rightbox.pack_start(self.sw, True, True, 0)
         # self.rightbox.pack_start(self.buttonbox, False, False, 0)
         #self.rightbox.pack_start(self.output, False, False, 0)
@@ -945,22 +979,15 @@ class GuiPdb:
         self.window.add(self.toplevelbox)
         self.window.show()
         self.mainbox.show()
-        self.text.show()
-        self.output.show()
-        self.output_sw.show(
-            
-        )
-        self.debug.show()
-        self.debug_sw.show()
+        
         #self.treeview.show()
         #self.toplevelhbox.show()
         self.toplevelhpaned1.show()
         self.toplevelhpaned2.show()
-        self.sw.show()
+
         self.vpaned.show()
         self.toplevelbox.show()
-        self.notebook.show()
-        
+        self.sw.show()
         self.debuggee_send()
         #self.handle_debuggee_output(ignorelines=0)
         
