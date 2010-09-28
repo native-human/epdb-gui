@@ -60,6 +60,23 @@ class Toolbar(gtk.HBox):
         self.rnext.child.modify_font(font)
         self.restart.child.modify_font(font)
 
+    def activate(self):
+        self.next.set_sensitive(True)
+        self.step.set_sensitive(True)
+        self.cont.set_sensitive(True)
+        self.rcontinue.set_sensitive(True)
+        self.rstep.set_sensitive(True)
+        self.rnext.set_sensitive(True)
+        self.restart.set_sensitive(True)
+
+    def deactivate(self):
+        self.next.set_sensitive(False)
+        self.step.set_sensitive(False)
+        self.cont.set_sensitive(False)
+        self.rcontinue.set_sensitive(False)
+        self.rstep.set_sensitive(False)
+        self.rnext.set_sensitive(False)
+        self.restart.set_sensitive(False)
 
 class SnapshotBox(gtk.VBox):
     def __init__(self, prnt):
@@ -196,6 +213,7 @@ class Varbox(gtk.VBox):
         self.entrybox = gtk.HBox()
         self.entry = gtk.Entry()
         self.entry.show()
+        self.entry.connect("activate", self.entry_activate)
         self.entrybox.pack_start(self.entry, True, True, 0)
         self.addbutton = gtk.Button('Add')
         self.addbutton.connect('clicked', self.on_varadd_clicked)
@@ -224,18 +242,23 @@ class Varbox(gtk.VBox):
         self.treestore.clear()
         self.treedict = {}
         
-    def on_varadd_clicked(self, widget, data=None):
-        #print 'Add variable', self.entry.get_text()
-        txt = self.entry.get_text()
-        if txt in self.treedict:
-            pass
-            # TODO statusline error
+    def add_var(self, name):
+        if name in self.treedict:
+            self.prnt.statusbar.push(self.prnt.context_id, "Variable name already exists")
         else:
-            id = self.treestore.append(None, (self.entry.get_text(), None, 'white'))
-            self.treedict[txt] = id
+            id = self.treestore.append(None, (name, None, 'white'))
+            self.treedict[name] = id
             self.entry.set_text('')
         self.update_all_variables()
-        #self.update_variable(txt, 'blup')
+
+    def entry_activate(self, entry, event=None):
+        txt = entry.get_text()
+        self.add_var(txt)
+
+    def on_varadd_clicked(self, widget, data=None):
+        txt = self.entry.get_text()
+        self.add_var(txt)
+        
 
     def update_all_variables(self):
         for var in self.treestore:
@@ -259,6 +282,14 @@ class Varbox(gtk.VBox):
         self.entry.modify_font(font_desc)
         self.addbutton.child.modify_font(font_desc)
         self.lbl.modify_font(font_desc)
+
+    def deactivate(self):
+        self.entry.set_sensitive(False)
+        self.addbutton.set_sensitive(False)
+        
+    def activate(self):
+        self.entry.set_sensitive(True)
+        self.addbutton.set_sensitive(True)
 
 class TimelineBox(gtk.VBox):
     def __init__(self, prnt):
@@ -286,13 +317,14 @@ class TimelineBox(gtk.VBox):
         self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.scrolledwindow.show()
         
-        self.treeview = gtk.TreeView(self.treestore)  # TODO rename to timeline treeview
+        self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         self.treeview.connect('button-press-event', self.on_treeview_button_press_event)
         self.treeview.connect("row-activated", self.on_treeview_activated)
 
         self.timelinebox = gtk.HBox()
         self.entry = gtk.Entry()
+        self.entry.connect("activate", self.entry_activate)
         self.addbutton = gtk.Button('Add')
         self.addbutton.connect('clicked', self.on_timeline_add_click)
         
@@ -333,11 +365,9 @@ class TimelineBox(gtk.VBox):
                 self.popup.popup( None, None, None, event.button, time)
             return True
     
-    def on_timeline_add_click(self, widget, data=None):
-        #print 'Add clicked', self.entry.get_text()
-        self.prnt.statusbar.push(self.prnt.context_id, "Add clicked")
+    def new_timeline(self, name):
         self.prnt.newtimelinesuc = None
-        self.prnt.debuggee_send('newtimeline %s\n' % self.entry.get_text())
+        self.prnt.debuggee_send('newtimeline %s\n' % name)
         #self.prnt.handle_debuggee_output()
         if self.prnt.newtimelinesuc == True:
             self.add_timeline(self.entry.get_text())
@@ -347,7 +377,12 @@ class TimelineBox(gtk.VBox):
         self.entry.set_text('')
         self.prnt.snapshotbox.clear_snapshots()
         self.prnt.snapshotbox.update_snapshots()
-
+    
+    def entry_activate(self, entry, event=None):
+        return self.new_timeline(entry.get_text())
+    
+    def on_timeline_add_click(self, widget, data=None):
+        self.new_timeline(self.entry.get_text())
 
     def on_treeview_activated(self, treeview, row, col):
         #print "treeview activated", row, col
@@ -373,6 +408,14 @@ class TimelineBox(gtk.VBox):
         self.addbutton.child.modify_font(font_desc)
         self.entry.modify_font(font_desc)
         self.lbl.modify_font(font_desc)
+    
+    def activate(self):
+        self.addbutton.set_sensitive(True)
+        self.entry.set_sensitive(True)
+    
+    def deactivate(self):
+        self.addbutton.set_sensitive(False)
+        self.entry.set_sensitive(False)
     
 class OutputBox(gtk.Notebook):
     def __init__(self, prnt):
@@ -423,6 +466,9 @@ class OutputBox(gtk.Notebook):
         entry.set_text('')
         entry.set_sensitive(False)
         self.prnt.debuggee_send(text+'\n')
+        self.prnt.varbox.activate()
+        self.prnt.timelinebox.activate()
+        self.prnt.toolbar.activate()
     
     def modify_font(self, font_desc):
         self.debug.modify_font(font_desc)
@@ -635,6 +681,9 @@ class GuiPdb:
                     elif line.startswith("#expect input#"):
                         self.outputbox.input_entry.set_sensitive(True)
                         self.outputbox.input_entry.grab_focus()
+                        self.varbox.deactivate()
+                        self.timelinebox.deactivate()
+                        self.toolbar.deactivate()
                         self.modelbl.set_markup(
                             'Mode: <span color="red">{0}</span>'.format('INPUT'))
                         returnmode = 'intermediate'
