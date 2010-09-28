@@ -419,11 +419,10 @@ class OutputBox(gtk.Notebook):
         self.debug_sw.show()
         
     def input_entry_activate(self, entry):
-        # TODO change to debuggee_send
-        self.prnt.debuggee.send(entry.get_text()+'\n')
+        text = entry.get_text()
         entry.set_text('')
         entry.set_sensitive(False)
-        self.prnt.debuggee_send()
+        self.prnt.debuggee_send(text+'\n')
     
     def modify_font(self, font_desc):
         self.debug.modify_font(font_desc)
@@ -625,7 +624,7 @@ class GuiPdb:
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
                     icm = re.match("#ic: (\d+) mode: (\w+)", line)
                     #print "interesting line '{0}'".format(line.replace(" ", '_'))
-                    prm = re.match("#var# ([<>/a-zA-Z0-9_\. \+\-]+) \|\|\| ([<>/a-zA-Z0-9_\. ]+)\r\n", line)
+                    prm = re.match("#var#([<>/a-zA-Z0-9_\. \+\-]+)#([<>/a-zA-Z0-9_\.'\" ]*)#\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
                     resm = re.match("#resource#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
                     resem = re.match("#resource_entry#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
@@ -673,7 +672,7 @@ class GuiPdb:
                         self.iclbl.set_markup('Ic: {0}'.format(ic))
                         #print "New markup set", mode, ic
                     elif prm:
-                        #print 'Got update', line
+                        print 'Got prm update', line
                         var = prm.group(1)
                         value = prm.group(2)
                         self.varbox.update_variable(var, value)
