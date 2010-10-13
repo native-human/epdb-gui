@@ -244,7 +244,7 @@ class Varbox(gtk.VBox):
         
     def add_var(self, name):
         if name in self.treedict:
-            self.prnt.statusbar.push(self.prnt.context_id, "Variable name already exists")
+            self.prnt.statusbar.message("Variable name already exists")
         else:
             id = self.treestore.append(None, (name, None, 'white'))
             self.treedict[name] = id
@@ -258,7 +258,6 @@ class Varbox(gtk.VBox):
     def on_varadd_clicked(self, widget, data=None):
         txt = self.entry.get_text()
         self.add_var(txt)
-        
 
     def update_all_variables(self):
         for var in self.treestore:
@@ -476,8 +475,42 @@ class OutputBox(gtk.Notebook):
         self.debug_tab_lbl.modify_font(font_desc)
         self.output_tab_lbl.modify_font(font_desc)
         self.input_entry.modify_font(font_desc)
+
+class Statusbar(gtk.Statusbar):
+    def __init__(self, prnt):
+        gtk.Statusbar.__init__(self)
+        self.prnt = prnt
         
+        self.messagelbl = self.get_children()[0].get_child().get_children()[0]
         
+        self.context_id = self.get_context_id("gepdb")
+        self.modelbl = gtk.Label("Mode label")
+        self.modelbl.set_markup('Mode: <span color="red">normal</span>')
+        self.modelbl.show()
+        
+        self.iclbl = gtk.Label("Ic label")
+        self.iclbl.set_markup('Ic: 0')
+        self.iclbl.show()
+        self.pack_start(self.iclbl, False, False, 0)
+        self.pack_start(self.modelbl, False, False, 20)
+        self.show()
+        
+    def set_mode(self, mode):
+        self.modelbl.set_markup(
+                        'Mode: <span color="red">{0}</span>'.format(mode))
+    
+    def set_ic(self, ic):
+        self.iclbl.set_markup('Ic: {0}'.format(ic))
+        
+    def message(self, message):
+        self.push(self.context_id, message)
+        
+    def modify_font(self, font_desc):
+        #gtk.Statusbar.child.modify_font(self, font_desc)
+        self.messagelbl.modify_font(font_desc)
+        self.iclbl.modify_font(font_desc)
+        self.modelbl.modify_font(font_desc)
+   
 class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
@@ -684,8 +717,7 @@ class GuiPdb:
                         self.varbox.deactivate()
                         self.timelinebox.deactivate()
                         self.toolbar.deactivate()
-                        self.modelbl.set_markup(
-                            'Mode: <span color="red">{0}</span>'.format('INPUT'))
+                        self.statusbar.set_mode('INPUT')
                         returnmode = 'intermediate'
                         break
                     elif line.startswith("#show resources#"):
@@ -716,10 +748,8 @@ class GuiPdb:
                     elif icm:
                         ic = icm.group(1)
                         mode = icm.group(2)
-                        self.modelbl.set_markup(
-                            'Mode: <span color="red">{0}</span>'.format(mode))
-                        self.iclbl.set_markup('Ic: {0}'.format(ic))
-                        #print "New markup set", mode, ic
+                        self.statusbar.set_mode(mode)
+                        self.statusbar.set_ic(ic)
                     elif prm:
                         print 'Got prm update', line
                         var = prm.group(1)
@@ -880,6 +910,7 @@ class GuiPdb:
                 self.resourcebox.modify_font(font_desc)
                 self.snapshotbox.modify_font(font_desc)
                 self.outputbox.modify_font(font_desc)
+                self.statusbar.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
@@ -1003,19 +1034,8 @@ class GuiPdb:
         #print "Menu type", type(self.breakpointmenu)
         self.toplevelbox.pack_start(menubar, False)
         menubar.show()
+        self.statusbar = Statusbar(self)
 
-        self.statusbar = gtk.Statusbar()
-        self.context_id = self.statusbar.get_context_id("gepdb")
-        self.modelbl = gtk.Label("Mode label")
-        self.modelbl.set_markup('Mode: <span color="red">normal</span>')
-        self.modelbl.show()
-        
-        self.iclbl = gtk.Label("Ic label")
-        self.iclbl.set_markup('Ic: 0')
-        self.iclbl.show()
-        self.statusbar.pack_start(self.iclbl, False, False, 0)
-        self.statusbar.pack_start(self.modelbl, False, False, 20)
-        self.statusbar.show()
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
         #self.toplevelbox.pack_start(self.toplevelhbox, True, True, 0)
