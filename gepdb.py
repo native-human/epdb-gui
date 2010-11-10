@@ -90,7 +90,7 @@ class SnapshotBox(gtk.VBox):
         self.lbl = gtk.Label('Snapshots')
         self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
-        self.treeview.set_headers_visible(False)
+        self.treeview.set_headers_visible(True)
         
         self.scrolledwindow = gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
@@ -99,8 +99,16 @@ class SnapshotBox(gtk.VBox):
         self.treeview.show()
         #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
         self.treedict = {}
-        self.tvcolumn1 = gtk.TreeViewColumn('Column 0', self.var_renderer, text=0)
-        self.tvcolumn2 = gtk.TreeViewColumn('Column 1', self.var_renderer, text=1)
+        self.tvcolumn1 = gtk.TreeViewColumn('id', self.var_renderer, text=0)
+        self.tvcolumn2 = gtk.TreeViewColumn('ic', self.var_renderer, text=1)
+        
+        self.idlbl = gtk.Label('id')
+        self.idlbl.show()
+        
+        self.iclbl = gtk.Label('ic')
+        self.iclbl.show()
+        self.tvcolumn1.set_widget(self.idlbl)
+        self.tvcolumn2.set_widget(self.iclbl)
         
         self.treeview.append_column(self.tvcolumn1)
         self.treeview.append_column(self.tvcolumn2)
@@ -127,6 +135,8 @@ class SnapshotBox(gtk.VBox):
     def modify_font(self, font_desc):
         self.treeview.modify_font(font_desc)
         self.lbl.modify_font(font_desc)
+        self.idlbl.modify_font(font_desc)
+        self.iclbl.modify_font(font_desc)
 
 class ResourceBox(gtk.VBox):
     def __init__(self, prnt):
@@ -837,8 +847,8 @@ class GuiPdb:
         def chooser_ok(widget, data=None):
             print "chooser ok", chooser.get_filename()
             self.filename = chooser.get_filename()
-            self.outputbuffer.set_text('')
-            self.debugbuffer.set_text('')
+            self.outputbox.outputbuffer.set_text('')
+            self.outputbox.debugbuffer.set_text('')
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
             # Delete breakpoints
@@ -898,6 +908,14 @@ class GuiPdb:
             self.font_dialog = None
     
     def font_selection_ok(self, button):
+        def change_menu_font(element, font_desc):
+            if isinstance(element, gtk.Container):
+                for e in element.get_children():
+                    change_menu_font(e, font_desc)
+            elif isinstance(element, gtk.Bin):
+                change_menu_font(e.get_child(), font_desc)
+            elif isinstance(element, gtk.Label):
+                element.modify_font(font_desc)
         self.font = self.font_dialog.get_font_name()
         if self.window:
             font_desc = pango.FontDescription(self.font)
@@ -911,6 +929,9 @@ class GuiPdb:
                 self.snapshotbox.modify_font(font_desc)
                 self.outputbox.modify_font(font_desc)
                 self.statusbar.modify_font(font_desc)
+                
+                change_menu_font(self.menubar, font_desc)
+                #self.menubar.modify_font(font_desc)
                 
     def font_dialog_destroyed(self, data=None):
         self.font_dialog = None
@@ -1029,11 +1050,12 @@ class GuiPdb:
         
         self.toolbar = Toolbar(self)
         
-        menubar = uimanager.get_widget('/MenuBar')
+        self.menubar = uimanager.get_widget('/MenuBar')
+        print self.menubar.get_children()[0].get_child()
         self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
         #print "Menu type", type(self.breakpointmenu)
-        self.toplevelbox.pack_start(menubar, False)
-        menubar.show()
+        self.toplevelbox.pack_start(self.menubar, False)
+        self.menubar.show()
         self.statusbar = Statusbar(self)
 
 
