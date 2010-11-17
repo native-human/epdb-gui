@@ -33,6 +33,8 @@ class Toolbar(gtk.HBox):
         self.cont.connect("clicked", self.prnt.continue_click, None)
         self.restart = gtk.Button("restart")
         self.restart.connect("clicked", self.prnt.restart_click, None)
+        self.show_breaks = gtk.Button("show_breaks")
+        self.show_breaks.connect("clicked", self.prnt.show_break_click, None)
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
         self.pack_start(self.rstep, False, False, 0)
@@ -44,6 +46,7 @@ class Toolbar(gtk.HBox):
         self.next.show()
         self.rnext.show()
         self.restart.show()
+        self.show_breaks.show()
         self.rcontinue.show()
         self.cont.show()
         self.rstep.show()
@@ -566,6 +569,7 @@ class GuiPdb:
                 print "Make breakpoint with no", self.breakpointno
                 self.breakpointdict[self.breakpointlineno] = self.breakpointno
             else:
+                print "No breakpoint setting success"
                 "TODO put can't set breakpoint into status line"
                 #print self.breakpointdict
         else:
@@ -581,16 +585,18 @@ class GuiPdb:
             #self.handle_debuggee_output()
             if self.clearbpsuccess == True:
                 start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
-                end = self.textbuffer.get_iter_at_line(self.breakpointlineno)
+                end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
                 self.textbuffer.remove_source_marks(start, end, category=None)
+                print "before deletion", self.breakpointdict
                 del self.breakpointdict[self.breakpointlineno]
+                print "after deletion", self.breakpointdict
                 "Toggle breakpoint"
                 "clear from dictionary"
             elif self.clearbpsuccess == False:
                 print "Couldn't delete breakpoint"
                 "Error message"
             else:
-                print 'Critical Error'
+                print 'Critical Error', self.clearbpsuccess
             #print "Deleting breakpoints not implemented yet"
 
     def rstep_click(self, widget, data=None):
@@ -599,15 +605,28 @@ class GuiPdb:
 
     def restart_click(self, widget, data=None):
         print('Restart')
-        self.outputbuff
-        er.set_text('')
-        self.debugbuffer.set_text('')
+        self.outputbox.outputbuffer.set_text('')
+        self.outputbox.debugbuffer.set_text('')
         self.timelinebox.reset()
         txt = open(self.filename, 'r').read()
+        # Delete breakpoints
+        self.breakpointdict = {}
+        start = self.textbuffer.get_start_iter()
+        end = self.textbuffer.get_end_iter()
+        self.textbuffer.remove_source_marks(start, end, category=None)
         self.textbuffer.set_text(txt)
+
+        self.snapshotbox.clear_snapshots()
+        self.resourcebox.clear_resources()
+        self.timelinebox.reset()
+        self.varbox.reset()
         self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
         #self.handle_debuggee_output(ignorelines=0)
         self.debuggee_send()
+
+    def show_break_click(self, widget, data=None):
+        print("Show break")
+        self.debuggee_send('show_break')
 
     def next_click(self, widget, data=None):
         print('Next')
@@ -626,7 +645,6 @@ class GuiPdb:
     def step_click(self, widget, data=None):
         print 'Step clicked'
         self.debuggee_send('step')
-        
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
@@ -747,6 +765,7 @@ class GuiPdb:
                     elif line.startswith('#->'):
                         self.append_output(line[3:])
                     elif bpsuc:
+                        self.append_debugbuffer(line)
                         self.breakpointno = bpsuc.group(1)
                         self.breakpointsuccess = True
                     elif clbpsuc:
@@ -870,6 +889,7 @@ class GuiPdb:
         print "open clicked"
         chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
         chooser.set_current_folder("/home/patrick/myprogs/gui")
+        chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
         okbutton.connect("clicked", chooser_ok)
         okbutton.show()
