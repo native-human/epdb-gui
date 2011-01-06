@@ -273,6 +273,7 @@ class Varbox(gtk.VBox):
         self.add_var(txt)
 
     def update_all_variables(self):
+        print("update variable")
         for var in self.treestore:
             #print var, var[0]
             #print 'p %s\n' % var[0]
@@ -504,6 +505,12 @@ class Statusbar(gtk.Statusbar):
         self.iclbl = gtk.Label("Ic label")
         self.iclbl.set_markup('Ic: 0')
         self.iclbl.show()
+        
+        self.timelbl = gtk.Label("Time Label")
+        self.timelbl.set_markup('Time: 0s')
+        self.timelbl.show()
+        
+        self.pack_start(self.timelbl, False, False, 0)
         self.pack_start(self.iclbl, False, False, 0)
         self.pack_start(self.modelbl, False, False, 20)
         self.show()
@@ -514,6 +521,9 @@ class Statusbar(gtk.Statusbar):
     
     def set_ic(self, ic):
         self.iclbl.set_markup('Ic: {0}'.format(ic))
+    
+    def set_time(self, time):
+        self.timelbl.set_markup('Time: {0}'.format(time))
         
     def message(self, message):
         self.push(self.context_id, message)
@@ -523,6 +533,10 @@ class Statusbar(gtk.Statusbar):
         self.messagelbl.modify_font(font_desc)
         self.iclbl.modify_font(font_desc)
         self.modelbl.modify_font(font_desc)
+   
+class EditWindow(gtk.Notebook):
+    def __init__(self):
+        gtk.Notebook.__init__(self)
    
 class GuiPdb:
     ui = '''<ui>
@@ -605,6 +619,19 @@ class GuiPdb:
 
     def restart_click(self, widget, data=None):
         print('Restart')
+        dlgentry = gtk.Entry()
+        dlgentry.set_text(self.parameters)
+        dlglbl = gtk.Label("Parameters: ")
+        dialog = gtk.Dialog(title="pass parameters", parent=self.window, flags=gtk.DIALOG_MODAL, buttons=("OK", 1))
+        dialog.vbox.pack_start(dlglbl, True, True, 0)
+        dialog.vbox.pack_start(dlgentry, True, True, 0)
+        dlgentry.show()
+        dlglbl.show()
+        answer = dialog.run()
+        print "parameter", dlgentry.get_text()
+        self.parameters = dlgentry.get_text() 
+        dialog.destroy()
+        
         self.outputbox.outputbuffer.set_text('')
         self.outputbox.debugbuffer.set_text('')
         self.timelinebox.reset()
@@ -620,7 +647,7 @@ class GuiPdb:
         self.resourcebox.clear_resources()
         self.timelinebox.reset()
         self.varbox.reset()
-        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
+        self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.parameters), timeout=None)
         #self.handle_debuggee_output(ignorelines=0)
         self.debuggee_send()
 
@@ -730,6 +757,7 @@ class GuiPdb:
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
                     icm = re.match("#ic: (\d+) mode: (\w+)", line)
+                    timem = re.match("#time: ([\d.]+)", line)
                     #print "interesting line '{0}'".format(line.replace(" ", '_'))
                     prm = re.match("#var#([<>/a-zA-Z0-9_\. \+\-]+)#([<>/a-zA-Z0-9_\.'\" ]*)#\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
@@ -779,6 +807,9 @@ class GuiPdb:
                         mode = icm.group(2)
                         self.statusbar.set_mode(mode)
                         self.statusbar.set_ic(ic)
+                    elif timem:
+                        t = timem.group(1)
+                        self.statusbar.set_time(t)
                     elif prm:
                         print 'Got prm update', line
                         var = prm.group(1)
@@ -786,7 +817,7 @@ class GuiPdb:
                         self.varbox.update_variable(var, value)
                         #print var, value
                     elif perrm:
-                        #print 'Got var err update'
+                        print 'Got var err update'
                         var = perrm.group(1)
                         #print var
                         self.varbox.update_variable_error(var)
@@ -881,7 +912,8 @@ class GuiPdb:
             self.resourcebox.clear_resources()
             self.timelinebox.reset()
             self.varbox.reset()
-            self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
+            self.parameters = ""
+            self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.parameteres), timeout=None)
             #self.handle_debuggee_output(ignorelines=0)
             self.debuggee_send()
             chooser.destroy()
@@ -966,7 +998,8 @@ class GuiPdb:
     
     def __init__(self, filename):
         self.filename = filename
-        self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(filename), timeout=None)
+        self.parameters = ""
+        self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(filename, self.parameters), timeout=None)
         
         self.running = True
         
