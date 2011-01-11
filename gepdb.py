@@ -10,10 +10,13 @@ import gobject
 import pango
 
 import sys
+import os.path
 import keyword, token, tokenize, cStringIO, string
 import pexpect
 import re
 import argparse
+    
+IMAGEDIR = "/usr/share/gepdb"
     
 class Toolbar(gtk.HBox):
     def __init__(self, prnt):
@@ -523,7 +526,8 @@ class Statusbar(gtk.Statusbar):
         self.iclbl.set_markup('Ic: {0}'.format(ic))
     
     def set_time(self, time):
-        self.timelbl.set_markup('Time: {0}'.format(time))
+        #self.timelbl.set_markup('Time: {0}'.format(time))
+        self.timelbl.set_markup('')
         
     def message(self, message):
         self.push(self.context_id, message)
@@ -1136,7 +1140,7 @@ class GuiPdb:
         
         #mark = self.textbuffer.create_source_mark("b1", "breakpoint", self.textbuffer.get_iter_at_line(1))
         self.breakpointdict = {} # lineno: bpno
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size("breakpoint.png", 64, 64)
+        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
         
         self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
         self.text.connect('button-release-event', self.button_release_sv)
