@@ -335,9 +335,12 @@ class GuiPdb:
                     elif synterr:
                         print "Syntax Error"
                         file = synterr.group(1)
-                        lineno = synterr.group(2)
+                        lineno = int(synterr.group(2))
                         self.messagebox.show_message("Syntax Error\n")
+                        self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
+                        self.textbuffer.place_cursor(self.lineiter)
                         self.toolbar.deactivate()
+                        #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
                     else:
                         'print "OTHER LINE", line'
                         self.append_debugbuffer(line[1:])
