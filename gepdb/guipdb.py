@@ -243,7 +243,7 @@ class GuiPdb:
                     bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
                     clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
                     icm = re.match("#ic: (\d+) mode: (\w+)", line)
-                    timem = re.match("#time: ([\d.]+)", line)
+                    timem = re.match("#time: ([\d.]*)", line)
                     #print "interesting line '{0}'".format(line.replace(" ", '_'))
                     prm = re.match("#var#([<>/a-zA-Z0-9_\. \+\-]+)#([<>/a-zA-Z0-9_\.'\" ]*)#\r\n", line)
                     perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)

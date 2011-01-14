@@ -45,8 +45,19 @@ class Statusbar(gtk.Statusbar):
         self.iclbl.set_markup('Ic: {0}'.format(ic))
     
     def set_time(self, time):
-        #self.timelbl.set_markup('Time: {0}'.format(time))
-        self.timelbl.set_markup('')
+        
+        if str(time).strip() == "":
+            self.timelbl.set_markup('')
+        else:
+            time = float(time)
+            unit = 's'
+            if time < 1:
+                time = time * 1000
+                unit = 'ms'
+                if time < 1:
+                    time = time * 1000
+                    unit = 'us'
+            self.timelbl.set_markup('Time: {0:0.1f} {1}'.format(time, unit))
         
     def message(self, message):
         self.push(self.context_id, message)
