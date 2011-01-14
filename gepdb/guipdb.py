@@ -1,4 +1,5 @@
 import pygtk
+
 pygtk.require('2.0')
 import gtk
 import gtksourceview2
@@ -19,35 +20,10 @@ from statusbar import Statusbar
 from toolbar import Toolbar
 from outputbox import OutputBox
 from resourcebox import ResourceBox
+from editwindow import EditWindow
+from messagebox import MessageBox
 
 IMAGEDIR = "/usr/share/gepdb"
-
-class MessageBox(gtk.EventBox):
-    def __init__(self):
-        gtk.EventBox.__init__(self)
-        self.hbox = gtk.HBox()
-        self.add(self.hbox)
-        self.messagelbl = gtk.Label("")
-        self.buttonbox = gtk.VBox()
-        self.buttonbox.show()
-        self.cancelbutton = gtk.Button("X")
-        self.cancelbutton.show()
-        self.cancelbutton.connect('clicked', self.on_cancel_clicked)
-        self.buttonbox.pack_start(self.cancelbutton, False, False,0)
-        self.hbox.pack_start(self.messagelbl, True, True, 0)
-        self.hbox.pack_start(self.buttonbox, False, False, 0)
-        self.messagelbl.show()
-        #self.messagelbl.modify_bg(gtk.STATE_NORMAL, self.get_colormap().alloc_color("green"))
-        self.modify_bg(gtk.STATE_NORMAL, self.get_colormap().alloc_color("red"))
-        self.hbox.show()
-        #self.show()
-    
-    def on_cancel_clicked(self, widget, data=None):
-        self.hide()
-        
-    def show_message(self, message):
-        self.messagelbl.set_text(message)
-        self.show()
 
 class GuiPdb:
     ui = '''<ui>
@@ -186,7 +162,6 @@ class GuiPdb:
     
     def textview_expose(self, widget, event):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):
-         
             return
         #print 'Expose event'
         visible_rect = widget.get_visible_rect()
@@ -202,8 +177,7 @@ class GuiPdb:
         context.rectangle(0, 0, width, height)
         context.clip()
         context.set_line_width(1.0)
-        context.set_source_rgba(1,1,
-                                0,.25)
+        context.set_source_rgba(1,1,0,.25)
         context.rectangle(0,y1-visible_rect.y, width, y2)
         context.fill()
 
@@ -246,6 +220,7 @@ class GuiPdb:
                     if m.group(1) == '<string>':
                         continue
                     lineno = int(m.group(2))
+                    self.edit_window.show_line(m.group(1), lineno)
                     self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
                     self.textbuffer.place_cursor(self.lineiter)
                     print m.group(1)
@@ -601,6 +576,9 @@ class GuiPdb:
         self.text.set_highlight_current_line(True)
         self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         
+        self.edit_window = EditWindow(filename)
+        self.edit_window.show()
+        
         self.messagebox = MessageBox()
         #self.messagebox.show_message("Syntax Error")
         
@@ -611,7 +589,8 @@ class GuiPdb:
         
         self.mainbox.pack_start(self.messagebox, False, False, 0)
         self.mainbox.pack_start(self.vpaned, True, True, 0)
-        self.vpaned.pack1(self.sw, resize=True, shrink=True)
+        #self.vpaned.pack1(self.sw, resize=True, shrink=True)
+        self.vpaned.pack1(self.edit_window, resize=True, shrink=True)
         #self.vpaned.pack2(self.output, resize=False, shrink=False)
         self.outputbox = OutputBox(self)
         self.vpaned.pack2(self.outputbox, resize=False, shrink=False)

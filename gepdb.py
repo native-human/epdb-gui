@@ -18,12 +18,6 @@ import argparse
 
 from gepdb.guipdb import GuiPdb    
 
-class EditWindow(gtk.Notebook):
-    def __init__(self):
-        gtk.Notebook.__init__(self)
-   
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Start the application logic for the poll website')
     parser.add_argument('file', help='Give the filename to execute in debug mode', nargs=1)
