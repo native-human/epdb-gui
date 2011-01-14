@@ -122,6 +122,7 @@ class GuiPdb:
         self.outputbox.outputbuffer.set_text('')
         self.outputbox.debugbuffer.set_text('')
         self.timelinebox.reset()
+        self.edit_window.restart()
         txt = open(self.filename, 'r').read()
         # Delete breakpoints
         self.breakpointdict = {}
@@ -576,7 +577,7 @@ class GuiPdb:
         self.text.set_highlight_current_line(True)
         self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         
-        self.edit_window = EditWindow(filename)
+        self.edit_window = EditWindow(self, filename)
         self.edit_window.show()
         
         self.messagebox = MessageBox()

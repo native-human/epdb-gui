@@ -17,7 +17,9 @@ IMAGEDIR = "/usr/share/gepdb"
 
 class ScrolledSourceView(gtk.ScrolledWindow):
     def __init__(self):
+        
         gtk.ScrolledWindow.__init__(self)
+        
         self.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.textbuffer = gtksourceview2.Buffer()    
         self.text = gtksourceview2.View(self.textbuffer)
@@ -31,6 +33,43 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         self.text.show()
         
+        self.text.set_editable(False)
+        self.add(self.text)
+        self.show()
+    
+class DebugPage(gtk.HBox):
+    def __init__(self, prnt, filename):
+        gtk.HBox.__init__(self)
+        self.prnt = prnt
+        self.filename = filename
+        with open(filename, 'r') as f:
+            text = f.read()
+        self.sourceview = ScrolledSourceView()
+        self.textbuffer = self.sourceview.textbuffer
+        self.text = self.sourceview.text
+        self.pack_start(self.sourceview, True, True, 0)
+        self.show()
+        
+        ui = '''<ui>
+        <popup name="BreakpointMenu">
+            <menuitem action="Breakpoint"/>
+        </popup>
+        </ui>
+        '''
+        
+        uimanager = self.uimanager = gtk.UIManager()
+        #accelgroup = uimanager.get_accel_group()
+        #self.window.add_accel_group(accelgroup)
+        self.actiongroup = actiongroup = gtk.ActionGroup('UIManagerExample')
+        actiongroup.add_actions([
+                ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)
+            ])
+        uimanager.insert_action_group(actiongroup, 0)
+        uimanager.add_ui_from_string(ui)
+        self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
+        print self.breakpointmenu
+        self.breakpointdict = {}
+        
         #self.lineiter = self.textbuffer.get_iter_at_line(0)
         
         pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
@@ -39,10 +78,19 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.text.connect("expose-event", self.textview_expose)
         self.text.connect("move-cursor", self.cursor_moved)
         self.text.connect("button-release-event", self.text_clicked)
-        self.text.set_editable(False)
-        self.add(self.text)
-        self.show()
+        
+        if text:
+            self.set_text(text)
     
+    def set_text(self, text):
+        self.textbuffer.set_text(text)
+        self.lineiter = self.textbuffer.get_iter_at_line(0)
+        self.textbuffer.place_cursor(self.lineiter)
+
+    def show_line(self, lineno):
+        self.lineiter = self.textbuffer.get_iter_at_line(int(lineno)-1)
+        self.textbuffer.place_cursor(self.lineiter)
+
     def button_release_sv(self, view, event):
         if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
             #print "gutter clicked LEFT"
@@ -76,26 +124,54 @@ class ScrolledSourceView(gtk.ScrolledWindow):
     def text_clicked(self, widget, event):
         self.textbuffer.place_cursor(self.lineiter)
 
-
-class DebugPage(gtk.HBox):
-    def __init__(self, text):
-        gtk.HBox.__init__(self)
-        self.sourceview = ScrolledSourceView() 
-        self.textbuffer = self.sourceview.textbuffer
-        self.text = self.sourceview.text
-        self.pack_start(self.sourceview, True, True, 0)
-        self.show()
-        if text:
-            self.set_text(text)
+    def toggle_breakpoint(self, widget, data=None):
+        #print "toggle breakpoint", self.breakpointlineno
+        if not self.breakpointdict.get(self.breakpointlineno):
+            self.prnt.debuggee.send('break {0}:{1}\n'.format(self.filename, self.breakpointlineno))
+            self.prnt.handle_debuggee_output()
+            if self.prnt.breakpointsuccess:
+                mark = self.textbuffer.create_source_mark(None, "breakpoint",
+                        self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
+                print "Make breakpoint with no", self.prnt.breakpointno
+                self.breakpointdict[self.breakpointlineno] = self.prnt.breakpointno
+            else:
+                print "No breakpoint setting success"
+                "TODO put can't set breakpoint into status line"
+                #print self.breakpointdict
+        else:
+            bpno = self.breakpointdict.get(self.breakpointlineno)
+            if not bpno:
+                print "TODO put error in status line"
+                return
+            
+            self.clearbpsuccess = None
+            print "Clear Breakpoint {0}".format(bpno)
+            self.prnt.debuggee_send('clear {0}\n'.format(bpno))
+            #self.debuggee.send('clear {0}\n'.format(bpno))
+            #self.handle_debuggee_output()
+            if self.clearbpsuccess == True:
+                start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
+                end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
+                self.textbuffer.remove_source_marks(start, end, category=None)
+                print "before deletion", self.breakpointdict
+                del self.breakpointdict[self.breakpointlineno]
+                print "after deletion", self.breakpointdict
+                "Toggle breakpoint"
+                "clear from dictionary"
+            elif self.clearbpsuccess == False:
+                print "Couldn't delete breakpoint"
+                "Error message"
+            else:
+                print 'Critical Error', self.clearbpsuccess
+            #print "Deleting breakpoints not implemented yet"
     
-    def set_text(self, text):
-        self.textbuffer.set_text(text)
-        self.sourceview.lineiter = self.textbuffer.get_iter_at_line(0)
-        self.textbuffer.place_cursor(self.sourceview.lineiter)
-
-    def show_line(self, lineno):
-        self.sourceview.lineiter = self.textbuffer.get_iter_at_line(int(lineno)-1)
-        self.textbuffer.place_cursor(self.sourceview.lineiter)
+    def reset(self):
+        "Resets all breakpoints"
+        self.breakpointdict = {}
+        start = self.textbuffer.get_start_iter()
+        end = self.textbuffer.get_end_iter()
+        self.textbuffer.remove_source_marks(start, end, category=None)
+        
 
 class TabHeader(gtk.HBox):
     def __init__(self, name, closefunc=None):
@@ -123,16 +199,16 @@ class TabHeader(gtk.HBox):
             self.closefunc()
             
 class EditWindow(gtk.Notebook):
-    def __init__(self, *filenames):
+    def __init__(self, prnt, *filenames):
         gtk.Notebook.__init__(self)
+        self.prnt = prnt
         self.set_tab_pos(gtk.POS_TOP)
+        #self.set_tab_pos(gtk.POS_LEFT)
         self.content_dict = {}
         self.label_dict = {}
         for fn in filenames:
-            with open(fn, 'r') as f:
-                txt = f.read()
             absfn = os.path.abspath(fn)
-            page = self.content_dict[absfn] = DebugPage(txt)
+            page = self.content_dict[absfn] = DebugPage(self.prnt, absfn)
             closefunc = self.gen_callback_delete_page(absfn)
             labelbox = TabHeader(os.path.basename(fn), closefunc)
             self.label_dict[absfn] = labelbox
@@ -169,13 +245,16 @@ class EditWindow(gtk.Notebook):
                 self.set_current_page(page_num)
         except KeyError:
             print "Could not find filename", filename
-            with open(filename, 'r') as f:
-                txt = f.read()
             absfn = os.path.abspath(filename)
-            page = self.content_dict[absfn] = DebugPage(txt)
+            page = self.content_dict[absfn] = DebugPage(self.prnt, absfn)
             labelbox = TabHeader(os.path.basename(filename), closefunc = self.gen_callback_delete_page(absfn))
             self.label_dict[absfn] = labelbox
             self.append_page(self.content_dict[absfn], labelbox)
             page_num = self.page_num(page)
             self.set_current_page(page_num)
             page.show_line(lineno)
+            
+    def restart(self):
+        "clear all breakpoints in all files for this debuggee"
+        for page in self.content_dict.values():
+            page.reset()
