@@ -5,6 +5,7 @@ mkdir -p ${INSTALLDIR}
 mkdir -p ${IMAGEDIR}
 mkdir -p ${PACKAGEDIR}
 cp breakpoint.png ${IMAGEDIR}
+cp bug.png ${IMAGEDIR}
 cp gepdb.py ${INSTALLDIR}/gepdb
 cp gepdb/*.py ${PACKAGEDIR}
 python -mcompileall ${PACKAGEDIR}

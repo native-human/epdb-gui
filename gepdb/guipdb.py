@@ -506,6 +506,9 @@ class GuiPdb:
     
         self.window.connect("destroy", self.destroy)
     
+        bugicon = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"bug.png"), 64, 64)
+        self.window.set_icon_list(bugicon)
+    
         uimanager = gtk.UIManager()
         self.uimanager = uimanager
     
