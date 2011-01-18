@@ -123,13 +123,13 @@ class GuiPdb:
         self.outputbox.debugbuffer.set_text('')
         self.timelinebox.reset()
         self.edit_window.restart()
-        txt = open(self.filename, 'r').read()
+        #txt = open(self.filename, 'r').read()
         # Delete breakpoints
-        self.breakpointdict = {}
-        start = self.textbuffer.get_start_iter()
-        end = self.textbuffer.get_end_iter()
-        self.textbuffer.remove_source_marks(start, end, category=None)
-        self.textbuffer.set_text(txt)
+        #self.breakpointdict = {}
+        #start = self.textbuffer.get_start_iter()
+        #end = self.textbuffer.get_end_iter()
+        #self.textbuffer.remove_source_marks(start, end, category=None)
+        #self.textbuffer.set_text(txt)
 
         self.snapshotbox.clear_snapshots()
         self.resourcebox.clear_resources()
@@ -225,8 +225,9 @@ class GuiPdb:
                     #print m.group(1)
                     
                 elif line.startswith('-> '):
-                    print 'At line: ', line[3:]
-                    print
+                    pass
+                    #print 'At line: ', line[3:]
+                    #print
                     #break
                     
                 elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
@@ -583,10 +584,9 @@ class GuiPdb:
         #self.text.set_highlight_current_line(True)
         #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         #
-        if self.filename:
-            self.edit_window = EditWindow(self, self.filename)
-        else:
-            self.edit_window = EditWindow(self)
+        #if self.filename:
+        #    self.edit_window = EditWindow(self, self.filename)
+        self.edit_window = EditWindow(self)
         self.edit_window.show()
         
         self.messagebox = MessageBox()

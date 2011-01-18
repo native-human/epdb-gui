@@ -80,7 +80,7 @@ class Varbox(gtk.VBox):
         self.add_var(txt)
 
     def update_all_variables(self):
-        print("update variable")
+        #print("update variable")
         for var in self.treestore:
             #print var, var[0]
             #print 'p %s\n' % var[0]

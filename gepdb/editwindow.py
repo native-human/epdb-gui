@@ -29,7 +29,7 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.textbuffer.set_language(l)
         self.text.set_show_line_marks(True)
         self.text.set_show_line_numbers(True)
-        self.text.set_highlight_current_line(True)
+        #self.text.set_highlight_current_line(True)
         self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         self.text.show()
         
@@ -50,6 +50,8 @@ class DebugPage(gtk.HBox):
         self.pack_start(self.sourceview, True, True, 0)
         self.show()
         
+        self.active = False
+        
         ui = '''<ui>
         <popup name="BreakpointMenu">
             <menuitem action="Breakpoint"/>
@@ -67,7 +69,7 @@ class DebugPage(gtk.HBox):
         uimanager.insert_action_group(actiongroup, 0)
         uimanager.add_ui_from_string(ui)
         self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
-        print self.breakpointmenu
+        #print self.breakpointmenu
         self.breakpointdict = {}
         
         #self.lineiter = self.textbuffer.get_iter_at_line(0)
@@ -82,6 +84,17 @@ class DebugPage(gtk.HBox):
         if text:
             self.set_text(text)
     
+    def unhighlight(self):
+        #print "unhighlight", self.filename
+        self.text.set_highlight_current_line(False)
+        self.active = False
+    
+    def highlight(self):
+        #print "highlight", self.filename
+        self.active = True
+        self.text.set_highlight_current_line(True)
+    
+    
     def set_text(self, text):
         self.textbuffer.set_text(text)
         self.lineiter = self.textbuffer.get_iter_at_line(0)
@@ -90,6 +103,8 @@ class DebugPage(gtk.HBox):
     def show_line(self, lineno):
         self.lineiter = self.textbuffer.get_iter_at_line(int(lineno)-1)
         self.textbuffer.place_cursor(self.lineiter)
+        self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
+        #self.text.set_highlight_current_line(False)
 
     def button_release_sv(self, view, event):
         if event.window == view.get_window(gtk.TEXT_WINDOW_LEFT):
@@ -105,18 +120,19 @@ class DebugPage(gtk.HBox):
         if event.window != widget.get_window(gtk.TEXT_WINDOW_TEXT):     
             return
 
-        visible_rect = widget.get_visible_rect()
-        it = self.lineiter
-        y1,y2 = widget.get_line_yrange(it)
-        curline = widget.get_buffer().get_iter_at_mark(widget.get_buffer().get_insert() ).get_line()
-        width, height = widget.allocation.width, widget.allocation.height
-        context = event.window.cairo_create()
-        context.rectangle(0, 0, width, height)
-        context.clip()
-        context.set_line_width(1.0)
-        context.set_source_rgba(1,1,0,.25)
-        context.rectangle(0,y1-visible_rect.y, width, y2)
-        context.fill()
+        if self.active:
+            visible_rect = widget.get_visible_rect()
+            it = self.lineiter
+            y1,y2 = widget.get_line_yrange(it)
+            curline = widget.get_buffer().get_iter_at_mark(widget.get_buffer().get_insert() ).get_line()
+            width, height = widget.allocation.width, widget.allocation.height
+            context = event.window.cairo_create()
+            context.rectangle(0, 0, width, height)
+            context.clip()
+            context.set_line_width(1.0)
+            context.set_source_rgba(1,1,0,.25)
+            context.rectangle(0,y1-visible_rect.y, width, y2)
+            context.fill()
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
         self.textbuffer.place_cursor(self.lineiter)
@@ -224,6 +240,7 @@ class EditWindow(gtk.Notebook):
             }
             widget "*.my-close-button\" style "my-button-style" """ 
         gtk.rc_parse_string(rcstyle)
+        self.activepage = None
 
     def gen_callback_delete_page(self, absfilename):
         def retfunc():
@@ -243,6 +260,11 @@ class EditWindow(gtk.Notebook):
             page_num = self.page_num(page)
             if current_page_num != page_num:
                 self.set_current_page(page_num)
+            active_page_num = self.page_num(self.activepage)
+            if page_num != active_page_num:
+                self.activepage.unhighlight()
+                self.activepage = page
+                self.activepage.highlight()
         except KeyError:
             print "Could not find filename", filename
             absfn = os.path.abspath(filename)
@@ -252,8 +274,12 @@ class EditWindow(gtk.Notebook):
             self.append_page(self.content_dict[absfn], labelbox)
             page_num = self.page_num(page)
             self.set_current_page(page_num)
+            if self.activepage:
+                self.activepage.unhighlight()
             page.show_line(lineno)
-            
+            self.activepage = page
+            self.activepage.highlight()
+
     def restart(self):
         "clear all breakpoints in all files for this debuggee"
         for page in self.content_dict.values():
