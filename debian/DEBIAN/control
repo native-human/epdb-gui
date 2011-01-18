@@ -1,8 +1,11 @@
 Package: gepdb
 Version: 0.1-1
-Section: base
+Section: devel
 Priority: optional
 Architecture: all
 Depends: python (>= 2.6.6-2)
 Maintainer: Patrick Sabin <patricksabin@gmx.at>
 Description: A graphical user interface for epdb.
+ A graphical user interface for epdb. Epdb is a reversible 
+ debugger for python and gepdb provides a nice graphical 
+ user interface.

@@ -1,0 +1,17 @@
+.TH gepdb
+.SH NAME
+gepdb - a reversible debugger for Python
+.SH SYNOPSIS
+.sp
+gepdb [\fIfilename\fP]
+.B
+.PP
+.SH DESCRIPTION
+.PP
+gepdb is a front-end for epdb - a reversible debugger for Python
+.PP
+.SH FILES
+.PP
+$HOME/.config/epdb
+.SH BUGS
+A lot.
