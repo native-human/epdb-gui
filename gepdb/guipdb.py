@@ -197,9 +197,7 @@ class GuiPdb:
                 self.varbox.update_all_variables()
                 self.resourcebox.update_resources()
                 self.snapshotbox.update_snapshots()
-                print "NORMAL RETURN"
         elif returnmode == 'intermediate':
-            print 'INTERMEDIATE RETURN'
             pass
         else:
             print "Unknown return mode"
@@ -222,9 +220,9 @@ class GuiPdb:
                         continue
                     lineno = int(m.group(2))
                     self.edit_window.show_line(m.group(1), lineno)
-                    self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
-                    self.textbuffer.place_cursor(self.lineiter)
-                    print m.group(1)
+                    #self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
+                    #self.textbuffer.place_cursor(self.lineiter)
+                    #print m.group(1)
                     
                 elif line.startswith('-> '):
                     print 'At line: ', line[3:]
@@ -273,7 +271,7 @@ class GuiPdb:
                     elif resem:
                         self.resourcebox.add_resource_entry(resem.group(1), resem.group(2), resem.group(3), resem.group(4))
                     elif tsnapm:
-                        print tsnapm, tsnapm.group(1), tsnapm.group(2)
+                        #print tsnapm, tsnapm.group(1), tsnapm.group(2)
                         self.snapshotbox.add_snapshot(tsnapm.group(1), tsnapm.group(2))
                     elif line.startswith('#-->'):
                         self.outputbox.outputbuffer.set_text('')
@@ -336,7 +334,7 @@ class GuiPdb:
         except pexpect.TIMEOUT:
             print "TIMEOUT"
             #gtk.main_quit()
-        self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
+        #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
         return returnmode
 
     def cursor_moved(self, widget,  step_size, count, extend_selection):
@@ -349,7 +347,7 @@ class GuiPdb:
 
     def append_output(self, txt):
         iter = self.outputbox.outputbuffer.get_end_iter()
-        print("append_txt", repr(txt))
+        print "append_txt", repr(txt)
         self.outputbox.outputbuffer.insert(iter, txt)
         self.outputbox.output.scroll_mark_onscreen(self.outputbox.outputbuffer.get_insert())
         #print 'inserted'
@@ -398,19 +396,20 @@ class GuiPdb:
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
             # Delete breakpoints
-            self.breakpointdict = {}
-            start = self.textbuffer.get_start_iter()
-            end = self.textbuffer.get_end_iter()
-            self.textbuffer.remove_source_marks(start, end, category=None)
-            self.textbuffer.set_text(txt)
+            #self.breakpointdict = {}
+            #start = self.textbuffer.get_start_iter()
+            #end = self.textbuffer.get_end_iter()
+            #self.textbuffer.remove_source_marks(start, end, category=None)
+            #self.textbuffer.set_text(txt)
             
             self.snapshotbox.clear_snapshots()
             self.resourcebox.clear_resources()
             self.timelinebox.reset()
             self.varbox.reset()
             self.parameters = ""
-            self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.parameteres), timeout=None)
+            self.debuggee = pexpect.spawn("python3 -m epdb {0}".format(self.filename), timeout=None)
             #self.handle_debuggee_output(ignorelines=0)
+            self.toolbar.activate()
             self.debuggee_send()
             chooser.destroy()
             
@@ -485,17 +484,21 @@ class GuiPdb:
         self.font_dialog = None
     
     def lbvpane_expose(self, pane, event):
-        print "lbvpane_expose", pane
+        #print "lbvpane_expose", pane
         rect = self.lbvpane.get_allocation()
-        print "Size request", rect.width, rect.height, rect.x, rect.y
+        #print "Size request", rect.width, rect.height, rect.x, rect.y
         self.lbvpane.set_position(rect.height/2)
-        self.lbvpane.disconnect(
-            self.lbvpane_expose_handlerid)
+        self.lbvpane.disconnect(self.lbvpane_expose_handlerid)
     
-    def __init__(self, filename):
-        self.filename = filename
-        self.parameters = ""
-        self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(filename, self.parameters), timeout=None)
+    def __init__(self, *args):
+        if len(args) > 0:
+            self.filename = args[0]
+            self.parameters = " ".join(args[1:])
+            self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.parameters), timeout=None)
+        else:
+            self.filename = None
+            self.debuggee = None
+        
         
         self.running = True
         
@@ -557,39 +560,42 @@ class GuiPdb:
         #self.leftbox.pack_start(self.varbox, True, True, 0)
         
         self.mainbox = gtk.VBox()
-    
-        self.textbuffer = gtksourceview2.Buffer()
-        self.text = gtksourceview2.View(self.textbuffer)
-        #self.text.set_property("can-focus", False)
-        self.text.connect("expose-event", self.textview_expose)
-        self.text.connect("move-cursor", self.cursor_moved)
-        self.text.connect("button-release-event", self.text_clicked)
-        self.text.set_editable(False)
-        self.text.show()
+        #
+        #self.textbuffer = gtksourceview2.Buffer()
+        #self.text = gtksourceview2.View(self.textbuffer)
+        ##self.text.set_property("can-focus", False)
+        #self.text.connect("expose-event", self.textview_expose)
+        #self.text.connect("move-cursor", self.cursor_moved)
+        #self.text.connect("button-release-event", self.text_clicked)
+        #self.text.set_editable(False)
+        #self.text.show()
         
         #self.textbuffer = self.text.get_buffer()
-        txt = open(filename, 'r').read()
-        self.textbuffer.set_text(txt)
-        self.lineiter = self.textbuffer.get_iter_at_line(0)
-        self.languagemanager = gtksourceview2.LanguageManager()
+        #txt = open(self.filename, 'r').read()
+        #self.textbuffer.set_text(txt)
+        #self.lineiter = self.textbuffer.get_iter_at_line(0)
+        #self.languagemanager = gtksourceview2.LanguageManager()
         
-        l = self.languagemanager.get_language("python")
-        self.textbuffer.set_language(l)
-        self.text.set_show_line_marks(True)
-        self.text.set_show_line_numbers(True)
-        self.text.set_highlight_current_line(True)
-        self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
-        
-        self.edit_window = EditWindow(self, filename)
+        #l = self.languagemanager.get_language("python")
+        #self.textbuffer.set_language(l)
+        #self.text.set_show_line_marks(True)
+        #self.text.set_show_line_numbers(True)
+        #self.text.set_highlight_current_line(True)
+        #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
+        #
+        if self.filename:
+            self.edit_window = EditWindow(self, self.filename)
+        else:
+            self.edit_window = EditWindow(self)
         self.edit_window.show()
         
         self.messagebox = MessageBox()
         #self.messagebox.show_message("Syntax Error")
         
         self.vpaned = gtk.VPaned()
-        self.sw = gtk.ScrolledWindow()
-        self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        self.sw.add(self.text)
+        #self.sw = gtk.ScrolledWindow()
+        #self.sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        #self.sw.add(self.text)
         
         self.mainbox.pack_start(self.messagebox, False, False, 0)
         self.mainbox.pack_start(self.vpaned, True, True, 0)
@@ -638,16 +644,19 @@ class GuiPdb:
 
         self.vpaned.show()
         self.toplevelbox.show()
-        self.sw.show()
-        self.debuggee_send()
+        #self.sw.show()
+        if self.debuggee:
+            self.debuggee_send()
+        else:
+            self.toolbar.deactivate()
         #self.handle_debuggee_output(ignorelines=0)
         
         #mark = self.textbuffer.create_source_mark("b1", "breakpoint", self.textbuffer.get_iter_at_line(1))
         self.breakpointdict = {} # lineno: bpno
         pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
         
-        self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
-        self.text.connect('button-release-event', self.button_release_sv)
+        #self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
+        #self.text.connect('button-release-event', self.button_release_sv)
         self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     
     def main(self):
