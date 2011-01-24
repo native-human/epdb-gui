@@ -38,9 +38,9 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.show()
     
 class DebugPage(gtk.HBox):
-    def __init__(self, prnt, filename):
+    def __init__(self, dbgcom, filename):
         gtk.HBox.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
         self.filename = filename
         with open(filename, 'r') as f:
             text = f.read()
@@ -94,7 +94,6 @@ class DebugPage(gtk.HBox):
         self.active = True
         self.text.set_highlight_current_line(True)
     
-    
     def set_text(self, text):
         self.textbuffer.set_text(text)
         self.lineiter = self.textbuffer.get_iter_at_line(0)
@@ -143,13 +142,13 @@ class DebugPage(gtk.HBox):
     def toggle_breakpoint(self, widget, data=None):
         #print "toggle breakpoint", self.breakpointlineno
         if not self.breakpointdict.get(self.breakpointlineno):
-            self.prnt.debuggee.send('break {0}:{1}\n'.format(self.filename, self.breakpointlineno))
-            self.prnt.handle_debuggee_output()
-            if self.prnt.breakpointsuccess:
+            self.dbgcom.debuggee.send('break {0}:{1}\n'.format(self.filename, self.breakpointlineno))
+            self.dbgcom.handle_debuggee_output()
+            if self.dbgcom.breakpointsuccess:
                 mark = self.textbuffer.create_source_mark(None, "breakpoint",
                         self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
-                print "Make breakpoint with no", self.prnt.breakpointno
-                self.breakpointdict[self.breakpointlineno] = self.prnt.breakpointno
+                print "Make breakpoint with no", self.dbgcom.breakpointno
+                self.breakpointdict[self.breakpointlineno] = self.dbgcom.breakpointno
             else:
                 print "No breakpoint setting success"
                 "TODO put can't set breakpoint into status line"
@@ -162,10 +161,10 @@ class DebugPage(gtk.HBox):
             
             self.clearbpsuccess = None
             print "Clear Breakpoint {0}".format(bpno)
-            self.prnt.debuggee_send('clear {0}\n'.format(bpno))
+            self.dbgcom.send('clear {0}\n'.format(bpno))
             #self.debuggee.send('clear {0}\n'.format(bpno))
             #self.handle_debuggee_output()
-            if self.clearbpsuccess == True:
+            if self.dbgcom.clearbpsuccess == True:
                 start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
                 end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
                 self.textbuffer.remove_source_marks(start, end, category=None)
@@ -174,7 +173,7 @@ class DebugPage(gtk.HBox):
                 print "after deletion", self.breakpointdict
                 "Toggle breakpoint"
                 "clear from dictionary"
-            elif self.clearbpsuccess == False:
+            elif self.dbgcom.clearbpsuccess == False:
                 print "Couldn't delete breakpoint"
                 "Error message"
             else:
@@ -215,16 +214,16 @@ class TabHeader(gtk.HBox):
             self.closefunc()
             
 class EditWindow(gtk.Notebook):
-    def __init__(self, prnt, *filenames):
+    def __init__(self, dbgcom, *filenames):
         gtk.Notebook.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
         self.set_tab_pos(gtk.POS_TOP)
         #self.set_tab_pos(gtk.POS_LEFT)
         self.content_dict = {}
         self.label_dict = {}
         for fn in filenames:
             absfn = os.path.abspath(fn)
-            page = self.content_dict[absfn] = DebugPage(self.prnt, absfn)
+            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn)
             closefunc = self.gen_callback_delete_page(absfn)
             labelbox = TabHeader(os.path.basename(fn), closefunc)
             self.label_dict[absfn] = labelbox
@@ -268,7 +267,7 @@ class EditWindow(gtk.Notebook):
         except KeyError:
             print "Could not find filename", filename
             absfn = os.path.abspath(filename)
-            page = self.content_dict[absfn] = DebugPage(self.prnt, absfn)
+            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn)
             labelbox = TabHeader(os.path.basename(filename), closefunc = self.gen_callback_delete_page(absfn))
             self.label_dict[absfn] = labelbox
             self.append_page(self.content_dict[absfn], labelbox)

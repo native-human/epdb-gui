@@ -13,25 +13,26 @@ import re
 import argparse
 
 class Toolbar(gtk.HBox):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom, guiactions):
         gtk.HBox.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
+        self.guiactions = guiactions
         self.rcontinue = gtk.Button("rcontinue")
-        self.rcontinue.connect("clicked", self.prnt.rcontinue_click, None)
+        self.rcontinue.connect("clicked", self.rcontinue_click, None)
         self.rstep = gtk.Button("rstep")
-        self.rstep.connect("clicked", self.prnt.rstep_click, None)
+        self.rstep.connect("clicked", self.rstep_click, None)
         self.step = gtk.Button("step")
-        self.step.connect("clicked", self.prnt.step_click, None)
+        self.step.connect("clicked", self.step_click, None)
         self.next = gtk.Button("next")
-        self.next.connect("clicked", self.prnt.next_click, None)
+        self.next.connect("clicked", self.next_click, None)
         self.rnext = gtk.Button("rnext")
-        self.rnext.connect("clicked", self.prnt.rnext_click, None)
+        self.rnext.connect("clicked", self.rnext_click, None)
         self.cont = gtk.Button("continue")
-        self.cont.connect("clicked", self.prnt.continue_click, None)
+        self.cont.connect("clicked", self.continue_click, None)
         self.restart = gtk.Button("restart")
-        self.restart.connect("clicked", self.prnt.restart_click, None)
+        self.restart.connect("clicked", self.restart_click, None)
         self.show_breaks = gtk.Button("show_breaks")
-        self.show_breaks.connect("clicked", self.prnt.show_break_click, None)
+        self.show_breaks.connect("clicked", self.show_break_click, None)
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
         self.pack_start(self.rstep, False, False, 0)
@@ -50,8 +51,6 @@ class Toolbar(gtk.HBox):
         self.show()
 
     def modify_font(self, font):
-        print "Modify font"
-        print "Child", self.next.child
         self.next.child.modify_font(font)
         self.step.child.modify_font(font)
         self.cont.child.modify_font(font)
@@ -77,3 +76,50 @@ class Toolbar(gtk.HBox):
         self.rstep.set_sensitive(False)
         self.rnext.set_sensitive(False)
         self.restart.set_sensitive(False)
+        
+    
+    def rstep_click(self, widget, data=None):
+        self.dbgcom.send('rstep')
+        #print('rstep')
+
+    def restart_click(self, widget, data=None):
+        # TODO make this function work
+        dlgentry = gtk.Entry()
+        dlgentry.set_text(self.dbgcom.params)
+        dlglbl = gtk.Label("Parameters: ")
+        #dialog = gtk.Dialog(title="pass parameters", parent=self.window, flags=gtk.DIALOG_MODAL, buttons=("OK", 1))
+        dialog = gtk.Dialog(title="pass parameters", flags=gtk.DIALOG_MODAL, buttons=("OK", 1))
+        dialog.vbox.pack_start(dlglbl, True, True, 0)
+        dialog.vbox.pack_start(dlgentry, True, True, 0)
+        dlgentry.show()
+        dlglbl.show()
+        answer = dialog.run()
+        print "parameter", dlgentry.get_text()
+        self.parameters = dlgentry.get_text() 
+        dialog.destroy()
+        
+        ###
+        self.guiactions.reset()
+        
+        # TODO change to dbgcom
+        self.dbgcom.new_debuggee(self.dbgcom.filename, self.dbgcom.params)
+        #self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.parameters), timeout=None)
+        #self.debuggee_send()
+
+    def show_break_click(self, widget, data=None):
+        self.dbgcom.send('show_break')
+
+    def next_click(self, widget, data=None):
+        self.dbgcom.send("next")
+
+    def rnext_click(self, widget, data=None):
+        self.dbgcom.send('rnext')
+
+    def continue_click(self, widget, data=None):
+        self.dbgcom.send("continue")
+        
+    def rcontinue_click(self, widget, data=None):
+        self.dbgcom.send("rcontinue")
+    
+    def step_click(self, widget, data=None):
+        self.dbgcom.send('step')

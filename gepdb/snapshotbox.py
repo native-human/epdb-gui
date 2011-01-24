@@ -13,9 +13,9 @@ import re
 import argparse
 
 class SnapshotBox(gtk.VBox):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom):
         gtk.VBox.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
 
         self.treestore = gtk.TreeStore(str, str)
         self.treestore.append(None, ('Test','Loc'))
@@ -56,7 +56,7 @@ class SnapshotBox(gtk.VBox):
 
     def update_snapshots(self):
         "Send to the debuggee the request to update the resources"
-        self.prnt.debuggee_send('timeline_snapshots', update=False)
+        self.dbgcom.send('timeline_snapshots', update=False)
     
     def add_snapshot(self, id, ic):
         "Add a resource to the store"

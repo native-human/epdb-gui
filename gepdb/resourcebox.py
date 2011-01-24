@@ -13,9 +13,9 @@ import re
 import argparse
 
 class ResourceBox(gtk.VBox):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom):
         gtk.VBox.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
 
         self.treestore = gtk.TreeStore(str, str)
         self.treestore.append(None, ('Test','Loc'))
@@ -49,7 +49,7 @@ class ResourceBox(gtk.VBox):
 
     def update_resources(self):
         "Send to the debuggee the request to update the resources"
-        self.prnt.debuggee_send('resources', update=False)
+        self.dbgcom.send('resources', update=False)
     
     def add_resource(self, type, location):
         "Add a resource to the store"
