@@ -119,6 +119,10 @@ class DebuggerCom:
     def is_active(self):
         return not self.debuggee is None
         
+    def quit(self):
+        if self.is_active():
+            self.send("quit")
+        
     def send(self, line=None, update=True):
         if line:
             if not line.endswith('\n'):
@@ -131,9 +135,6 @@ class DebuggerCom:
         returnmode = self.handle_debuggee_output(ignorelines=ignorelines)
         if returnmode == 'normal':
             if update:        
-                #self.varbox.update_all_variables()
-                #self.resourcebox.update_resources()
-                #self.snapshotbox.update_snapshots()
                 self.guiactions.update()
         elif returnmode == 'intermediate':
             pass
@@ -141,7 +142,6 @@ class DebuggerCom:
             print "Unknown return mode"
     
     def handle_debuggee_output(self, ignorelines=1):
-        #print 'handle_output called'
         returnmode = 'normal'
         try:
             while True:
@@ -313,8 +313,6 @@ class GuiPdb:
             <menuitem action="RemoveVar"/>
         </popup>
         </ui>'''
-    def norestart(self):
-        self.running = False
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
@@ -322,6 +320,7 @@ class GuiPdb:
 
     def destroy(self, widget, data=None):
         print "destroy signal occurred"
+        self.debuggercom.quit()
         gtk.main_quit()
 
     def append_output(self, txt):
@@ -445,11 +444,9 @@ class GuiPdb:
         if len(args) > 0:
             self.filename = args[0]
             self.parameters = " ".join(args[1:])
-            self.debuggercom.new_debuggee(self.filename, self.parameters)
         else:
             self.filename = None
-        self.running = True
-        
+            
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_default_size(640,480)
         self.window.connect("delete_event", self.delete_event)
@@ -546,6 +543,9 @@ class GuiPdb:
         self.vpaned.show()
         self.toplevelbox.show()
         
+        if len(args) > 0:
+            self.debuggercom.new_debuggee(self.filename, self.parameters)
+        
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
         
@@ -554,4 +554,8 @@ class GuiPdb:
         self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     
     def main(self):
-        gtk.main()
+        try:
+            gtk.main()
+        except KeyboardInterrupt:
+            print 'Cleanup'
+            self.debuggercom.quit()
