@@ -101,7 +101,16 @@ class GuiActions:
         self.window.resourcebox.clear_resources()
         self.window.timelinebox.reset()
         self.window.varbox.reset()
+    
+    def update_snapshots(self):
+        self.window.snapshotbox.clear_snapshots()
+        self.window.snapshotbox.update_snapshots()
         
+    def activate(self):
+        self.window.varbox.activate()
+        self.window.timelinebox.activate()
+        self.window.toolbar.activate()
+    
 class DebuggerCom:
     def __init__(self, guiactions):
         self.guiactions = guiactions
@@ -484,7 +493,7 @@ class GuiPdb:
         self.toplevelhpaned2 = gtk.HPaned()
         self.leftbox = gtk.VBox()
         self.lbvpane = gtk.VPaned()
-        self.timelinebox = TimelineBox(self)
+        self.timelinebox = TimelineBox(self.debuggercom, self.guiactions)
         self.varbox = Varbox(self)
         self.resourcebox = ResourceBox(self.debuggercom)
         self.leftbox.show()
@@ -512,7 +521,7 @@ class GuiPdb:
         self.mainbox.pack_start(self.messagebox, False, False, 0)
         self.mainbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.edit_window, resize=True, shrink=True)
-        self.outputbox = OutputBox(self)
+        self.outputbox = OutputBox(self.debuggercom, self.guiactions)
         self.vpaned.pack2(self.outputbox, resize=False, shrink=False)
         
         self.toplevelhpaned1.pack1(self.leftbox, resize=False, shrink=False)

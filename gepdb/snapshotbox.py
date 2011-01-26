@@ -48,6 +48,8 @@ class SnapshotBox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn2)
         
         self.scrolledwindow.add(self.treeview)
+    
+        self.treeview.connect("row-activated", self.on_treeview_activated)
         
         #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
@@ -71,3 +73,8 @@ class SnapshotBox(gtk.VBox):
         self.lbl.modify_font(font_desc)
         self.idlbl.modify_font(font_desc)
         self.iclbl.modify_font(font_desc)
+    
+    def on_treeview_activated(self, treeview, row, col):
+        model = treeview.get_model()
+        self.timelineswitchsuc = None
+        self.dbgcom.send('activate_snapshot %s\n' % model[row][0])

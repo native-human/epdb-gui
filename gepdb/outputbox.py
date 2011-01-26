@@ -13,9 +13,10 @@ import re
 import argparse
 
 class OutputBox(gtk.Notebook):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom, guiactions):
         gtk.Notebook.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
+        self.guiactions = guiactions
         self.debugbuffer = gtk.TextBuffer()
         self.debug = gtk.TextView(self.debugbuffer)
         self.debug.set_editable(False)
@@ -60,11 +61,9 @@ class OutputBox(gtk.Notebook):
         text = entry.get_text()
         entry.set_text('')
         entry.set_sensitive(False)
-        self.prnt.debuggee_send(text+'\n')
-        self.prnt.varbox.activate()
-        self.prnt.timelinebox.activate()
-        self.prnt.toolbar.activate()
-    
+        self.dbgcom.send(text+'\n')
+        self.guiactions.activate()
+        
     def modify_font(self, font_desc):
         self.debug.modify_font(font_desc)
         self.output.modify_font(font_desc)

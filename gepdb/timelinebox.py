@@ -13,19 +13,21 @@ import re
 import argparse
 
 class TimelineBox(gtk.VBox):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom, guiactions):
         
         gtk.VBox.__init__(self)
         
-        self.prnt = prnt
-        self.prnt.actiongroup.add_actions([
-                    ('ActivateTimeline', None, '_Activate', None, "Activate Timeline",
-                     None),
-                    ('RemoveTimeline', None, '_Remove', None, "Remove Timeline",
-                     None)
-                    ])
+        self.dbgcom = dbgcom
+        self.guiactions = guiactions
+        #self.prnt.actiongroup.add_actions([
+        #            ('ActivateTimeline', None, '_Activate', None, "Activate Timeline",
+        #             None),
+        #            ('RemoveTimeline', None, '_Remove', None, "Remove Timeline",
+        #             None)
+        #            ])
+        #
+        #self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
         
-        self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
         #print 'popup', self.popup
         self.lbl = gtk.Label("Timelines")
         self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
@@ -83,21 +85,22 @@ class TimelineBox(gtk.VBox):
                 treeview.grab_focus()
                 treeview.set_cursor( path, col, 0)
                 # TODO make popup menu to remove breakpoint
-                self.popup.popup( None, None, None, event.button, time)
+                #self.popup.popup( None, None, None, event.button, time)
             return True
     
     def new_timeline(self, name):
-        self.prnt.newtimelinesuc = None
-        self.prnt.debuggee_send('newtimeline %s\n' % name)
+        self.dbgcom.newtimelinesuc = None
+        self.dbgcom.send('newtimeline %s\n' % name)
         #self.prnt.handle_debuggee_output()
-        if self.prnt.newtimelinesuc == True:
+        if self.dbgcom.newtimelinesuc == True:
             self.add_timeline(self.entry.get_text())
         else:
             #print self.prnt.newtimelinesuc
             "TODO put failed message into status line"
         self.entry.set_text('')
-        self.prnt.snapshotbox.clear_snapshots()
-        self.prnt.snapshotbox.update_snapshots()
+        self.guiactions.update_snapshots()
+        #self.prnt.snapshotbox.clear_snapshots()
+        #self.prnt.snapshotbox.update_snapshots()
     
     def entry_activate(self, entry, event=None):
         return self.new_timeline(entry.get_text())
@@ -111,8 +114,9 @@ class TimelineBox(gtk.VBox):
         self.timelineswitchsuc = None
         #self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
         #self.prnt.handle_debuggee_output()
-        self.prnt.debuggee_send('switch_timeline %s\n' % model[row][0])
-        if self.prnt.timelineswitchsuc:
+        # TODO: this is not correct here. There is no parent.
+        self.dbgcom.send('switch_timeline %s\n' % model[row][0])
+        if self.dbgcom.timelineswitchsuc:
             for e in self.treestore:
                 e[1]='white'
             text = model[row][0]
