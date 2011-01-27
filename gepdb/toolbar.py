@@ -29,6 +29,9 @@ class Toolbar(gtk.HBox):
         self.rnext.connect("clicked", self.rnext_click, None)
         self.cont = gtk.Button("continue")
         self.cont.connect("clicked", self.continue_click, None)
+        self.snapshot = gtk.Button("snapshot")
+        self.snapshot.connect("clicked", self.snapshot_click, None)
+
         self.restart = gtk.Button("restart")
         self.restart.connect("clicked", self.restart_click, None)
         self.show_breaks = gtk.Button("show_breaks")
@@ -39,6 +42,7 @@ class Toolbar(gtk.HBox):
         self.pack_start(self.step, False, False, 0)
         self.pack_start(self.next, False, False, 0)
         self.pack_start(self.cont, False, False, 0)
+        self.pack_start(self.snapshot, False, False, 0)
         self.pack_start(self.restart, False, False, 0)
         self.step.show()
         self.next.show()
@@ -48,6 +52,7 @@ class Toolbar(gtk.HBox):
         self.rcontinue.show()
         self.cont.show()
         self.rstep.show()
+        self.snapshot.show()
         self.show()
 
     def modify_font(self, font):
@@ -123,3 +128,6 @@ class Toolbar(gtk.HBox):
     
     def step_click(self, widget, data=None):
         self.dbgcom.send('step')
+        
+    def snapshot_click(self, widget, data=None):
+        self.dbgcom.send('snapshot')

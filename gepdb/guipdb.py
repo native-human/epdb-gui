@@ -76,7 +76,7 @@ class GuiActions:
         self.window.statusbar.set_ic(ic)
 
     def set_time(self, time):
-        self.window.statusbar.set_ic(time)
+        self.window.statusbar.set_time(time)
 
     def update_variable(self, var, value):
         self.window.varbox.update_variable(var, value)
