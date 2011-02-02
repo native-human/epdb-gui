@@ -111,6 +111,9 @@ class GuiActions:
         self.window.timelinebox.activate()
         self.window.toolbar.activate()
     
+    def statusbar_message(self, message):
+        self.window.statusbar.message(message)
+    
 class DebuggerCom:
     def __init__(self, guiactions):
         self.guiactions = guiactions
@@ -165,7 +168,7 @@ class DebuggerCom:
                 m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
                 if m:
                     #self.append_debugbuffer(line)
-                    self.guiactions.append_debugbuffer(line)
+                    #self.guiactions.append_debugbuffer(line)
                     if m.group(1) == '<string>':
                         continue
                     lineno = int(m.group(2))
@@ -261,7 +264,7 @@ class DebuggerCom:
                         self.guiactions.update_variable(var, value)
                         #print var, value
                     elif perrm:
-                        print 'Got var err update'
+                        #print 'Got var err update'
                         var = perrm.group(1)
                         #print var
                         #self.varbox.update_variable_error(var)
@@ -294,7 +297,7 @@ class DebuggerCom:
                 else:
                     #print line
                     self.guiactions.append_output(line)
-                    self.guiactions.append_output(line)
+                    #self.guiactions.append_output(line)
         except pexpect.TIMEOUT:
             print "TIMEOUT"
             #gtk.main_quit()
@@ -494,7 +497,7 @@ class GuiPdb:
         self.leftbox = gtk.VBox()
         self.lbvpane = gtk.VPaned()
         self.timelinebox = TimelineBox(self.debuggercom, self.guiactions)
-        self.varbox = Varbox(self)
+        self.varbox = Varbox(self.debuggercom, self.guiactions)
         self.resourcebox = ResourceBox(self.debuggercom)
         self.leftbox.show()
         self.leftbox.pack_start(self.lbvpane, True, True, 0)

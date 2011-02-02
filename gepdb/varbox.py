@@ -13,9 +13,10 @@ import re
 import argparse
 
 class Varbox(gtk.VBox):
-    def __init__(self, prnt):
+    def __init__(self, dbgcom, guiactions):
         gtk.VBox.__init__(self)
-        self.prnt = prnt
+        self.dbgcom = dbgcom
+        self.guiactions = guiactions
 
         self.treestore = gtk.TreeStore(str, str, str)
  
@@ -64,7 +65,8 @@ class Varbox(gtk.VBox):
         
     def add_var(self, name):
         if name in self.treedict:
-            self.prnt.statusbar.message("Variable name already exists")
+            #self.prnt.statusbar.message("Variable name already exists")
+            self.guiactions.statusbar_message("Variable name already exists")
         else:
             id = self.treestore.append(None, (name, None, 'white'))
             self.treedict[name] = id
@@ -84,7 +86,7 @@ class Varbox(gtk.VBox):
         for var in self.treestore:
             #print var, var[0]
             #print 'p %s\n' % var[0]
-            self.prnt.debuggee_send('p %s\n' % var[0], update=False)
+            self.dbgcom.send('p %s\n' % var[0], update=False)
             #self.prnt.debuggee.send('p %s\n' % var[0])
             #self.prnt.handle_debuggee_output()
     
