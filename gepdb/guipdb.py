@@ -4,7 +4,6 @@ from twisted.internet import gtk2reactor
 gtk2reactor.install()
 from twisted.internet import interfaces, reactor, protocol, error, address, defer, utils
 from twisted.protocols import basic
-import subprocess as sp
 import pygtk
 
 pygtk.require('2.0')
@@ -103,7 +102,7 @@ class GuiPdb:
             self.timelinebox.reset()
             self.varbox.reset()
             self.parameters = ""
-            self.debuggercom.new_debuggee(self.filename)
+            self.debuggercom.new_debuggee(self.filename, self.parameters)
             self.toolbar.activate()
             chooser.destroy()
             
@@ -291,8 +290,8 @@ class GuiPdb:
         self.toplevelbox.show()
         
         if len(args) > 0:
-            #self.debuggercom.new_debuggee(self.filename, self.parameters)
-            p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', self.filename], stdout=sp.PIPE)
+            self.debuggercom.new_debuggee(self.filename, self.parameters)
+            #p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', self.filename], stdout=sp.PIPE)
         
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()

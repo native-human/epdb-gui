@@ -3,6 +3,7 @@ from twisted.internet import interfaces, reactor, protocol, error, address, defe
 from twisted.protocols import basic
 import socket
 import re
+import subprocess as sp
 
 class DbgComProtocol(basic.LineReceiver):
     def connectionMade(self):
@@ -68,6 +69,7 @@ class DbgComProtocol(basic.LineReceiver):
             self.guiactions.clear_breakpoint(bpid)
         else:
             print "other cmd: ", cmd, args
+    
     def connectionLost(self, reason):
         print "connection Lost", reason
     
@@ -82,10 +84,18 @@ class DbgComFactory(protocol.Factory):
     
 class DbgComChooser:
     def __init__(self):
-        pass
+        self.p = None
     
     def set_active_dbgcom(self, dbgcom):
         self._dbgcom = dbgcom
+    
+    def new_debuggee(self, filename, parameters):
+        
+        if self.p:
+            self.quit()
+        # TODO split parameters
+        # TODO change the communication channel
+        self.p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', filename, parameters], stdout=sp.PIPE)
     
     def __getattr__(self, name):
         return getattr(self._dbgcom, name)
