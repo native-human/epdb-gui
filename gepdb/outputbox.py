@@ -61,7 +61,7 @@ class OutputBox(gtk.Notebook):
         text = entry.get_text()
         entry.set_text('')
         entry.set_sensitive(False)
-        self.dbgcom.send(text+'\n')
+        self.dbgcom.sendLine(text+'\n')
         self.guiactions.activate()
         
     def modify_font(self, font_desc):

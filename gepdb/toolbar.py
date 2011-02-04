@@ -84,7 +84,7 @@ class Toolbar(gtk.HBox):
         
     
     def rstep_click(self, widget, data=None):
-        self.dbgcom.send('rstep')
+        self.dbgcom.sendLine('rstep')
         #print('rstep')
 
     def restart_click(self, widget, data=None):
@@ -112,22 +112,22 @@ class Toolbar(gtk.HBox):
         #self.debuggee_send()
 
     def show_break_click(self, widget, data=None):
-        self.dbgcom.send('show_break')
+        self.dbgcom.sendLine('show_break')
 
     def next_click(self, widget, data=None):
-        self.dbgcom.send("next")
+        self.dbgcom.sendLine("next")
 
     def rnext_click(self, widget, data=None):
-        self.dbgcom.send('rnext')
+        self.dbgcom.sendLine('rnext')
 
     def continue_click(self, widget, data=None):
-        self.dbgcom.send("continue")
+        self.dbgcom.sendLine("continue")
         
     def rcontinue_click(self, widget, data=None):
-        self.dbgcom.send("rcontinue")
+        self.dbgcom.sendLine("rcontinue")
     
     def step_click(self, widget, data=None):
-        self.dbgcom.send('step')
+        self.dbgcom.sendLine('step')
         
     def snapshot_click(self, widget, data=None):
-        self.dbgcom.send('snapshot')
+        self.dbgcom.sendLine('snapshot')

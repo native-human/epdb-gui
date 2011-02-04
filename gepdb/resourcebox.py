@@ -49,7 +49,7 @@ class ResourceBox(gtk.VBox):
 
     def update_resources(self):
         "Send to the debuggee the request to update the resources"
-        self.dbgcom.send('resources', update=False)
+        self.dbgcom.sendLine('resources')
     
     def add_resource(self, type, location):
         "Add a resource to the store"

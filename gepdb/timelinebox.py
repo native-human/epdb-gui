@@ -90,18 +90,20 @@ class TimelineBox(gtk.VBox):
     
     def new_timeline(self, name):
         self.dbgcom.newtimelinesuc = None
-        self.dbgcom.send('newtimeline %s\n' % name)
+        self.dbgcom.sendLine('newtimeline %s\n' % name)
         #self.prnt.handle_debuggee_output()
-        if self.dbgcom.newtimelinesuc == True:
-            self.add_timeline(self.entry.get_text())
-        else:
-            #print self.prnt.newtimelinesuc
-            "TODO put failed message into status line"
+        #if self.dbgcom.newtimelinesuc == True:
+        #    self.add_timeline(self.entry.get_text())
+        #else:
+        #    #print self.prnt.newtimelinesuc
+        #    "TODO put failed message into status line"
         self.entry.set_text('')
-        self.guiactions.update_snapshots()
-        #self.prnt.snapshotbox.clear_snapshots()
-        #self.prnt.snapshotbox.update_snapshots()
-    
+        #self.guiactions.update_snapshots()
+        
+    #def add_new_timeline(self, name):
+    #    self.add_timeline(name)
+    #    self.guiactions.update_snapshots()
+    #
     def entry_activate(self, entry, event=None):
         return self.new_timeline(entry.get_text())
     
@@ -115,7 +117,7 @@ class TimelineBox(gtk.VBox):
         #self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
         #self.prnt.handle_debuggee_output()
         # TODO: this is not correct here. There is no parent.
-        self.dbgcom.send('switch_timeline %s\n' % model[row][0])
+        self.dbgcom.sendLine('switch_timeline %s\n' % model[row][0])
         if self.dbgcom.timelineswitchsuc:
             for e in self.treestore:
                 e[1]='white'

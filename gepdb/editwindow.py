@@ -15,6 +15,45 @@ import argparse
 
 IMAGEDIR = "/usr/share/gepdb"
 
+class Breakpoint:
+    def __init__(self, filename, lineno, id):
+        self.filename = filename
+        self.lineno = lineno
+        self.id = id
+
+class BreakpointCollection:
+    def __init__(self):
+        self.breakpoint_loc_dict = {}
+        self.breakpoint_id_dict = {}
+        self.breakpoint_dict = {}
+    
+    def add(self, bp):
+        self.breakpoint_loc_dict[(bp.filename, bp.lineno)] = bp
+        self.breakpoint_id_dict[bp.id] = bp
+        self.breakpoint_dict[bp] = True
+    
+    def remove(self, bp):
+        del self.breakpoint_loc_dict[(bp.filename, bp.lineno)]
+        del self.breakpoint_id_dict[bp.id]
+        del self.breakpoint_dict[bp]
+
+    def clear(self):
+        self.breakpoint_loc_dict.clear()
+        self.breakpointdict.clear()
+        self.breakpoint_id_dict.clear()
+        
+    def get_by_loc(self, filename, lineno):
+        return self.breakpoint_loc_dict[(filename, lineno)]
+        
+    def get_by_id(self, id):
+        return self.breakpoint_id_dict[id]
+        
+    def has_loc(self, filename, lineno):
+        return (filename, lineno) in self.breakpoint_loc_dict
+    
+    def has_id(self, id):
+        return id in self.breakpoint_id_dict
+
 class ScrolledSourceView(gtk.ScrolledWindow):
     def __init__(self):
         
@@ -38,7 +77,7 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.show()
     
 class DebugPage(gtk.HBox):
-    def __init__(self, dbgcom, filename):
+    def __init__(self, dbgcom, filename, bp_collection):
         gtk.HBox.__init__(self)
         self.dbgcom = dbgcom
         self.filename = filename
@@ -70,7 +109,7 @@ class DebugPage(gtk.HBox):
         uimanager.add_ui_from_string(ui)
         self.breakpointmenu = uimanager.get_widget('/BreakpointMenu')
         #print self.breakpointmenu
-        self.breakpointdict = {}
+        self.bp_collection = bp_collection
         
         #self.lineiter = self.textbuffer.get_iter_at_line(0)
         
@@ -139,50 +178,64 @@ class DebugPage(gtk.HBox):
     def text_clicked(self, widget, event):
         self.textbuffer.place_cursor(self.lineiter)
 
+    def set_breakpoint(self, bp):
+        mark = self.textbuffer.create_source_mark(None, "breakpoint",
+                    self.textbuffer.get_iter_at_line(bp.lineno-1))
+        self.bp_collection.add(bp)
+        #self.breakpointdict[(self.filename, lineno)] = bpid
+        
+    def clear_breakpoint(self, bpid):
+        bp = self.bp_collection.get_by_id(bpid)
+        start = self.textbuffer.get_iter_at_line(bp.lineno-1)
+        end = self.textbuffer.get_iter_at_line(bp.lineno-1)
+        self.textbuffer.remove_source_marks(start, end, category=None)
+        self.bp_collection.remove(bp)
+        #del self.breakpointdict[self.breakpointlineno]
+        
     def toggle_breakpoint(self, widget, data=None):
         #print "toggle breakpoint", self.breakpointlineno
-        if not self.breakpointdict.get(self.breakpointlineno):
-            self.dbgcom.debuggee.send('break {0}:{1}\n'.format(self.filename, self.breakpointlineno))
-            self.dbgcom.handle_debuggee_output()
-            if self.dbgcom.breakpointsuccess:
-                mark = self.textbuffer.create_source_mark(None, "breakpoint",
-                        self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
-                print "Make breakpoint with no", self.dbgcom.breakpointno
-                self.breakpointdict[self.breakpointlineno] = self.dbgcom.breakpointno
-            else:
-                print "No breakpoint setting success"
-                "TODO put can't set breakpoint into status line"
+        if not self.bp_collection.has_loc(self.filename, self.breakpointlineno):
+            self.dbgcom.sendLine('break {0}:{1}'.format(self.filename, self.breakpointlineno))
+            #self.dbgcom.handle_debuggee_output()
+            #if self.dbgcom.breakpointsuccess:
+            #    mark = self.textbuffer.create_source_mark(None, "breakpoint",
+            #            self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
+            #    print "Make breakpoint with no", self.dbgcom.breakpointno
+            #    self.breakpointdict[self.breakpointlineno] = self.dbgcom.breakpointno
+            #else:
+            #    print "No breakpoint setting success"
+            #    "TODO put can't set breakpoint into status line"
                 #print self.breakpointdict
         else:
-            bpno = self.breakpointdict.get(self.breakpointlineno)
-            if not bpno:
+            bp = self.bp_collection.get_by_loc(self.filename, self.breakpointlineno)
+            if not bp:
                 print "TODO put error in status line"
                 return
             
-            self.clearbpsuccess = None
-            print "Clear Breakpoint {0}".format(bpno)
-            self.dbgcom.send('clear {0}\n'.format(bpno))
+            #self.clearbpsuccess = None
+            print "Clear Breakpoint {0}".format(bp.id)
+            self.dbgcom.sendLine('clear {0}\n'.format(bp.id))
             #self.debuggee.send('clear {0}\n'.format(bpno))
             #self.handle_debuggee_output()
-            if self.dbgcom.clearbpsuccess == True:
-                start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
-                end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
-                self.textbuffer.remove_source_marks(start, end, category=None)
-                print "before deletion", self.breakpointdict
-                del self.breakpointdict[self.breakpointlineno]
-                print "after deletion", self.breakpointdict
-                "Toggle breakpoint"
-                "clear from dictionary"
-            elif self.dbgcom.clearbpsuccess == False:
-                print "Couldn't delete breakpoint"
-                "Error message"
-            else:
-                print 'Critical Error', self.clearbpsuccess
+            #if self.dbgcom.clearbpsuccess == True:
+            #    start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
+            #    end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
+            #    self.textbuffer.remove_source_marks(start, end, category=None)
+            #    print "before deletion", self.breakpointdict
+            #    del self.breakpointdict[self.breakpointlineno]
+            #    print "after deletion", self.breakpointdict
+            #    "Toggle breakpoint"
+            #    "clear from dictionary"
+            #elif self.dbgcom.clearbpsuccess == False:
+            #    print "Couldn't delete breakpoint"
+            #    "Error message"
+            #else:
+            #    print 'Critical Error', self.clearbpsuccess
             #print "Deleting breakpoints not implemented yet"
     
     def reset(self):
         "Resets all breakpoints"
-        self.breakpointdict = {}
+        #self.breakpointdict = {}
         start = self.textbuffer.get_start_iter()
         end = self.textbuffer.get_end_iter()
         self.textbuffer.remove_source_marks(start, end, category=None)
@@ -216,6 +269,7 @@ class TabHeader(gtk.HBox):
 class EditWindow(gtk.Notebook):
     def __init__(self, dbgcom, *filenames):
         gtk.Notebook.__init__(self)
+        self.bp_collection = BreakpointCollection()
         self.dbgcom = dbgcom
         self.set_tab_pos(gtk.POS_TOP)
         #self.set_tab_pos(gtk.POS_LEFT)
@@ -223,7 +277,7 @@ class EditWindow(gtk.Notebook):
         self.label_dict = {}
         for fn in filenames:
             absfn = os.path.abspath(fn)
-            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn)
+            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
             closefunc = self.gen_callback_delete_page(absfn)
             labelbox = TabHeader(os.path.basename(fn), closefunc)
             self.label_dict[absfn] = labelbox
@@ -265,9 +319,9 @@ class EditWindow(gtk.Notebook):
                 self.activepage = page
                 self.activepage.highlight()
         except KeyError:
-            print "Could not find filename", filename
+            #print "Could not find filename", filename
             absfn = os.path.abspath(filename)
-            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn)
+            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
             labelbox = TabHeader(os.path.basename(filename), closefunc = self.gen_callback_delete_page(absfn))
             self.label_dict[absfn] = labelbox
             self.append_page(self.content_dict[absfn], labelbox)
@@ -281,5 +335,17 @@ class EditWindow(gtk.Notebook):
 
     def restart(self):
         "clear all breakpoints in all files for this debuggee"
+        self.bp_collection.clear()
         for page in self.content_dict.values():
             page.reset()
+            
+    def set_breakpoint(self, bpid, filename, lineno):
+        absfilename = os.path.abspath(filename)
+        bp = Breakpoint(filename, int(lineno), int(bpid))
+        page = self.content_dict[absfilename]
+        page.set_breakpoint(bp)
+
+    def clear_breakpoint(self, bpid):
+        bp = self.bp_collection.get_by_id(int(bpid))
+        page = self.content_dict[bp.filename]
+        page.clear_breakpoint(int(bpid))

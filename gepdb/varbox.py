@@ -86,7 +86,7 @@ class Varbox(gtk.VBox):
         for var in self.treestore:
             #print var, var[0]
             #print 'p %s\n' % var[0]
-            self.dbgcom.send('p %s\n' % var[0], update=False)
+            self.dbgcom.sendLine('p %s\n' % var[0])
             #self.prnt.debuggee.send('p %s\n' % var[0])
             #self.prnt.handle_debuggee_output()
     

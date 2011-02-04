@@ -58,7 +58,7 @@ class SnapshotBox(gtk.VBox):
 
     def update_snapshots(self):
         "Send to the debuggee the request to update the resources"
-        self.dbgcom.send('timeline_snapshots', update=False)
+        self.dbgcom.sendLine('timeline_snapshots')
     
     def add_snapshot(self, id, ic):
         "Add a resource to the store"
@@ -77,4 +77,4 @@ class SnapshotBox(gtk.VBox):
     def on_treeview_activated(self, treeview, row, col):
         model = treeview.get_model()
         self.timelineswitchsuc = None
-        self.dbgcom.send('activate_snapshot %s\n' % model[row][0])
+        self.dbgcom.sendLine('activate_snapshot %s\n' % model[row][0])

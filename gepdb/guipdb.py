@@ -1,3 +1,10 @@
+
+import twisted
+from twisted.internet import gtk2reactor
+gtk2reactor.install()
+from twisted.internet import interfaces, reactor, protocol, error, address, defer, utils
+from twisted.protocols import basic
+import subprocess as sp
 import pygtk
 
 pygtk.require('2.0')
@@ -23,288 +30,11 @@ from resourcebox import ResourceBox
 from editwindow import EditWindow
 from messagebox import MessageBox
 
+from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom
+from guiactions import GuiActions
+
 IMAGEDIR = "/usr/share/gepdb"
-
-class GuiActions:
-    def __init__(self, window):
-        self.window = window
-
-    def update(self):
-        self.window.varbox.update_all_variables()
-        self.window.resourcebox.update_resources()
-        self.window.snapshotbox.update_snapshots()
-        
-    def append_debugbuffer(self, line):
-        self.window.append_debugbuffer(line)
-        
-    def show_line(self, filename, lineno):
-        self.window.edit_window.show_line(filename, lineno)
-        
-    def expect_input(self):
-        self.window.outputbox.input_entry.set_sensitive(True)
-        self.window.outputbox.input_entry.grab_focus()
-        self.window.varbox.deactivate()
-        self.window.timelinebox.deactivate()
-        self.window.toolbar.deactivate()
-        self.window.statusbar.set_mode('INPUT')
-        
-    def clear_resources(self):
-        self.window.resourcebox.clear_resources()
-        
-    def clear_snapshots(self):
-        self.window.snapshotbox.clear_snapshots()
-        
-    def add_resource(self, type, location):
-        self.window.resourcebox.add_resource(type, location)
     
-    def add_resource_entry(self, type, location, ic, id):
-        self.window.resourcebox.add_resource_entry(type, location, ic, id)
-     
-    def add_snapshot(self, id, ic):   
-        self.window.snapshotbox.add_snapshot(id, ic)
-        
-    def set_output_text(self, text):
-        self.window.outputbox.outputbuffer.set_text(text)        
-    
-    def append_output(self, text):
-        self.window.append_output(text)
-        
-    def set_mode(self, mode):
-        self.window.statusbar.set_mode(mode)
-    
-    def set_ic(self, ic):
-        self.window.statusbar.set_ic(ic)
-
-    def set_time(self, time):
-        self.window.statusbar.set_time(time)
-
-    def update_variable(self, var, value):
-        self.window.varbox.update_variable(var, value)
-    
-    def update_variable_error(self, var):
-        self.window.varbox.update_variable_error(var)
-        
-    def show_syntax_error(self, file, lineno):
-        self.window.messagebox.show_message("Syntax Error\n")
-        self.show_line(file, lineno)
-        #self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
-        #self.textbuffer.place_cursor(self.lineiter)
-        self.window.toolbar.deactivate()
-        
-    def reset(self):
-        self.window.outputbox.outputbuffer.set_text('')
-        self.window.outputbox.debugbuffer.set_text('')
-        self.window.timelinebox.reset()
-        self.window.edit_window.restart()
-        
-        self.window.snapshotbox.clear_snapshots()
-        self.window.resourcebox.clear_resources()
-        self.window.timelinebox.reset()
-        self.window.varbox.reset()
-    
-    def update_snapshots(self):
-        self.window.snapshotbox.clear_snapshots()
-        self.window.snapshotbox.update_snapshots()
-        
-    def activate(self):
-        self.window.varbox.activate()
-        self.window.timelinebox.activate()
-        self.window.toolbar.activate()
-    
-    def statusbar_message(self, message):
-        self.window.statusbar.message(message)
-    
-class DebuggerCom:
-    def __init__(self, guiactions):
-        self.guiactions = guiactions
-        self.debuggee = None
-        self.params = ""
-        
-    def new_debuggee(self, filename, params=""):
-        self.filename = filename
-        self.params = ""
-        if self.debuggee:
-            self.send("quit")
-        self.debuggee = pexpect.spawn("python3 -m epdb {0} {1}".format(self.filename, self.params), timeout=None)
-        self.send()
-        
-    def is_active(self):
-        return not self.debuggee is None
-        
-    def quit(self):
-        if self.is_active():
-            self.send("quit")
-        
-    def send(self, line=None, update=True):
-        if line:
-            if not line.endswith('\n'):
-                line += '\n'
-            ignorelines = 1
-            #print "SEND LINE TO DEBUGGEE: ", line
-            self.debuggee.send(line)
-        else:
-            ignorelines = 0
-        returnmode = self.handle_debuggee_output(ignorelines=ignorelines)
-        if returnmode == 'normal':
-            if update:        
-                self.guiactions.update()
-        elif returnmode == 'intermediate':
-            pass
-        else:
-            print "Unknown return mode"
-    
-    def handle_debuggee_output(self, ignorelines=1):
-        returnmode = 'normal'
-        try:
-            while True:
-                line = self.debuggee.readline()
-                if line == '':
-                    break
-                if ignorelines > 0:
-                    #print "line ignored:", line
-                    ignorelines -= 1
-                    continue
-                #print(line)
-                m = re.match('> ([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', line)
-                if m:
-                    #self.append_debugbuffer(line)
-                    #self.guiactions.append_debugbuffer(line)
-                    if m.group(1) == '<string>':
-                        continue
-                    lineno = int(m.group(2))
-                    self.guiactions.show_line(m.group(1), lineno)
-                    #self.edit_window.show_line(m.group(1), lineno)
-                    
-                elif line.startswith('-> '):
-                    pass
-                    #print 'At line: ', line[3:]
-                    #break
-                    
-                elif line.startswith('(Pdb)') or line.startswith('(Epdb)'):
-                    #print 'Normal break'
-                    returnmode = 'normal'
-                    break
-                elif line.startswith("***"):
-                    print line
-                    self.guiactions.append_debugbuffer(line)
-                elif line.startswith('#'):
-                    bpsuc = re.match('#Breakpoint ([0-9]+) at ([<>/a-zA-Z0-9_\.]+):([0-9]+)', line)
-                    clbpsuc = re.match("#Deleted breakpoint ([0-9]+)", line)
-                    icm = re.match("#ic: (\d+) mode: (\w+)", line)
-                    timem = re.match("#time: ([\d.]*)", line)
-                    #print "interesting line '{0}'".format(line.replace(" ", '_'))
-                    prm = re.match("#var#([<>/a-zA-Z0-9_\. \+\-]+)#([<>/a-zA-Z0-9_\.'\" ]*)#\r\n", line)
-                    perrm = re.match("#varerror# ([<>/a-zA-Z0-9_\. \+\-]+)\r\n", line)
-                    resm = re.match("#resource#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
-                    resem = re.match("#resource_entry#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
-                    tsnapm = re.match("#tsnapshot#([<>/a-zA-Z0-9_\. \+\-]*)#([<>/a-zA-Z0-9_\. \+\-]*)#\r\n", line)
-                    synterr = re.match("#syntax_error#([<>/a-zA-Z0-9_\. \+\-]*)#([0-9]+)#\r\n", line)
-                    if line.startswith('#*** Blank or comment'):
-                        self.breakpointsuccess = False
-                    elif line.startswith("#expect input#"):
-                        self.guiactions.expect_input()
-                        #self.outputbox.input_entry.set_sensitive(True)
-                        #self.outputbox.input_entry.grab_focus()
-                        #self.varbox.deactivate()
-                        #self.timelinebox.deactivate()
-                        #self.toolbar.deactivate()
-                        #self.statusbar.set_mode('INPUT')
-                        returnmode = 'intermediate'
-                        break
-                    elif line.startswith("#show resources#"):
-                        self.guiactions.clear_resources()
-                        #self.resourcebox.clear_resources()
-                    elif line.startswith("#timeline_snapshots#"):
-                        self.guiactions.clear_snapshots()
-                        #self.snapshotbox.clear_snapshots()
-                    elif resm:
-                        #print "resm", resm.group(1), resm.group(2)
-                        self.guiactions.add_resource(resm.group(1), resm.group(2))
-                        #self.resourcebox.add_resource(resm.group(1), resm.group(2))
-                    elif resem:
-                        self.guiactions.add_resource_entry(resem.group(1), resem.group(2), resem.group(3), resem.group(4))
-                        #self.resourcebox.add_resource_entry(resem.group(1), resem.group(2), resem.group(3), resem.group(4))
-                    elif tsnapm:
-                        #print tsnapm, tsnapm.group(1), tsnapm.group(2)
-                        #self.snapshotbox.add_snapshot(tsnapm.group(1), tsnapm.group(2))
-                        self.guiactions.add_snapshot(tsnapm.group(1), tsnapm.group(2))
-                    elif line.startswith('#-->'):
-                        #self.outputbox.outputbuffer.set_text('')
-                        self.guiactions.set_output_text('')
-                    elif line.startswith('#->'):
-                        self.guiactions.append_output(line[3:])
-                        #self.append_output(line[3:])
-                    elif bpsuc:
-                        #self.append_debugbuffer(line)
-                        self.guiactions.append_debugbuffer(line)
-                        self.breakpointno = bpsuc.group(1)
-                        self.breakpointsuccess = True
-                    elif clbpsuc:
-                        self.clearbpsuccess = True
-                    elif line.startswith("#newtimeline successful"):
-                        self.newtimelinesuc = True
-                    elif line.startswith("#Switched to timeline"):
-                        self.timelineswitchsuc = True
-                    elif icm:
-                        ic = icm.group(1)
-                        mode = icm.group(2)
-                        self.guiactions.set_mode(mode)
-                        self.guiactions.set_ic(ic)
-                        #self.statusbar.set_mode(mode)
-                        #self.statusbar.set_ic(ic)
-                    elif timem:
-                        t = timem.group(1)
-                        self.guiactions.set_time(t)
-                        #self.statusbar.set_time(t)
-                    elif prm:
-                        print 'Got prm update', line
-                        var = prm.group(1)
-                        value = prm.group(2)
-                        #self.varbox.update_variable(var, value)
-                        self.guiactions.update_variable(var, value)
-                        #print var, value
-                    elif perrm:
-                        #print 'Got var err update'
-                        var = perrm.group(1)
-                        #print var
-                        #self.varbox.update_variable_error(var)
-                        self.guiactions.update_variable_error(var)
-                    elif synterr:
-                        print "Syntax Error"
-                        file = synterr.group(1)
-                        lineno = int(synterr.group(2))
-                        
-                        self.guiactions.show_syntax_error(file, lineno)
-                        #self.messagebox.show_message("Syntax Error\n")
-                        #self.lineiter = self.textbuffer.get_iter_at_line(lineno-1)
-                        #self.textbuffer.place_cursor(self.lineiter)
-                        #self.toolbar.deactivate()
-                        
-                        #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
-                    else:
-                        'print "OTHER LINE", line'
-                        self.guiactions.append_debugbuffer(line[1:])
-                elif line.startswith('--Return--'):
-                    print 'Return'
-                    self.guiactions.append_output(line)
-                    #dialog = RestartDlg(self)
-                    #dialog.run()
-                #elif line.startswith('The program finished and will be restarted'):
-                #    print 'Finished: ', line
-                #    dlg = MessageDlg(title='Restart', message='The program has finished and will be restarted now', action=self.restart)
-                #    dlg.run()
-                #    #break
-                else:
-                    #print line
-                    self.guiactions.append_output(line)
-                    #self.guiactions.append_output(line)
-        except pexpect.TIMEOUT:
-            print "TIMEOUT"
-            #gtk.main_quit()
-        #self.text.scroll_mark_onscreen(self.textbuffer.get_insert())
-        return returnmode
-
-
 class GuiPdb:
     ui = '''<ui>
         <menubar name="MenuBar">
@@ -317,6 +47,8 @@ class GuiPdb:
             <menuitem action="ChangeFont"/>
           </menu>
         </menubar>
+        </ui>'''
+    unused = """
         <popup name="TimelineMenu">
             <menuitem action="ActivateTimeline"/>
             <menuitem action="RemoveTimeline"/>
@@ -324,7 +56,7 @@ class GuiPdb:
         <popup name="VarMenu">
             <menuitem action="RemoveVar"/>
         </popup>
-        </ui>'''
+    """
 
     def delete_event(self, widget, event, data=None):
         print "delete event occurred"
@@ -334,6 +66,7 @@ class GuiPdb:
         print "destroy signal occurred"
         self.debuggercom.quit()
         gtk.main_quit()
+        reactor.stop()
 
     def append_output(self, txt):
         iter = self.outputbox.outputbuffer.get_end_iter()
@@ -451,7 +184,9 @@ class GuiPdb:
     
     def __init__(self, *args):
         self.guiactions = GuiActions(self)
-        self.debuggercom = DebuggerCom(self.guiactions)
+        self.debuggercom = DbgComChooser()
+        self.debuggercom.set_active_dbgcom(DebuggerCom(self.guiactions))
+        #self.debuggercom = DebuggerCom(self.guiactions)
         
         if len(args) > 0:
             self.filename = args[0]
@@ -556,7 +291,8 @@ class GuiPdb:
         self.toplevelbox.show()
         
         if len(args) > 0:
-            self.debuggercom.new_debuggee(self.filename, self.parameters)
+            #self.debuggercom.new_debuggee(self.filename, self.parameters)
+            p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', self.filename], stdout=sp.PIPE)
         
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
@@ -567,7 +303,12 @@ class GuiPdb:
     
     def main(self):
         try:
+            factory = DbgComFactory(self.guiactions)
+            reactor.listenUNIX('/tmp/dbgcom', factory)
+            reactor.run()
             gtk.main()
         except KeyboardInterrupt:
             print 'Cleanup'
+            gtk.main_quit()
             self.debuggercom.quit()
+            reactor.stop()
