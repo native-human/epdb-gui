@@ -39,7 +39,7 @@ class BreakpointCollection:
 
     def clear(self):
         self.breakpoint_loc_dict.clear()
-        self.breakpointdict.clear()
+        self.breakpoint_dict.clear()
         self.breakpoint_id_dict.clear()
         
     def get_by_loc(self, filename, lineno):

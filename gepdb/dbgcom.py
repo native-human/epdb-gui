@@ -7,26 +7,26 @@ import subprocess as sp
 
 class DbgComProtocol(basic.LineReceiver):
     def connectionMade(self):
-        print "connection made"
+        #print "connection made"
         self.guiactions = self.factory.guiactions
         self.guiactions.activate()
         self.guiactions.window.debuggercom.set_active_dbgcom(self)
     
     def sendLine(self, line):
-        print "sendLine", line
+        #print "sendLine", line
         basic.LineReceiver.sendLine(self, line)
     
     def lineReceived(self, line):
         cmd,_,args = line.partition("#")
         if cmd == 'lineinfo':
-            print 'lineinfo:', args
+            #print 'lineinfo:', args
             m = re.match('([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', args)
             if m:
                 if m.group(1) == '<string>':
                     print 'String'
                 else:
                     lineno = int(m.group(2))
-                    print 'showline', m.group(1), lineno
+                    #print 'showline', m.group(1), lineno
                     self.guiactions.show_line(m.group(1), lineno)
                     #self.sendLine("step")
             else:
@@ -67,11 +67,15 @@ class DbgComProtocol(basic.LineReceiver):
         elif cmd == "clear success":
             bpid = args
             self.guiactions.clear_breakpoint(bpid)
+        elif cmd == "switched to timeline":
+            bpid = args
+            self.guiactions.new_active_timeline(args)
         else:
             print "other cmd: ", cmd, args
     
     def connectionLost(self, reason):
-        print "connection Lost", reason
+        pass
+        #print "connection Lost", reason
     
     def quit(self):
         self.sendLine('quit')
@@ -81,6 +85,22 @@ class DbgComFactory(protocol.Factory):
     
     def __init__(self, guiactions):
         self.guiactions = guiactions
+    
+class DbgProcessProtocol(protocol.ProcessProtocol):
+    def __init__(self, guiactions):
+        self.guiactions = guiactions
+    
+    def connectionMade(self):
+        #print "Connection made"
+        pass
+        
+    def outReceived(self, data):
+        #print "outReceived", data
+        self.guiactions.append_output(data)
+    
+    def processEnded(self, reason):
+        #print "Process ended: ", reason
+        pass
     
 class DbgComChooser:
     def __init__(self):
@@ -217,6 +237,7 @@ class DebuggerCom:
                     elif line.startswith('#-->'):
                         #self.outputbox.outputbuffer.set_text('')
                         self.guiactions.set_output_text('')
+                        print "Clear output box1"
                     elif line.startswith('#->'):
                         self.guiactions.append_output(line[3:])
                         #self.append_output(line[3:])

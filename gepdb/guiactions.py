@@ -10,6 +10,7 @@ class GuiActions:
         self.window.snapshotbox.update_snapshots()
         
     def append_debugbuffer(self, line):
+        # TODO call outputbox directly
         self.window.append_debugbuffer(line)
         
     def show_line(self, filename, lineno):
@@ -43,7 +44,8 @@ class GuiActions:
         self.window.outputbox.outputbuffer.set_text(text)        
     
     def append_output(self, text):
-        self.window.append_output(text)
+        self.window.outputbox.append_output(text)
+        #self.window.append_output(text)
 
     def set_mode(self, mode):
         self.window.statusbar.set_mode(mode)
@@ -68,6 +70,7 @@ class GuiActions:
         self.window.toolbar.deactivate()
 
     def reset(self):
+        print("Reset")
         self.window.outputbox.outputbuffer.set_text('')
         self.window.outputbox.debugbuffer.set_text('')
         self.window.timelinebox.reset()
@@ -101,3 +104,5 @@ class GuiActions:
     def clear_breakpoint(self, bpid):
         self.window.edit_window.clear_breakpoint(bpid)
     
+    def new_active_timeline(self, timelinename):
+        self.window.timelinebox.new_active_timeline(timelinename)

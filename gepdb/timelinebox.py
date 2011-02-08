@@ -114,16 +114,22 @@ class TimelineBox(gtk.VBox):
         #print "treeview activated", row, col
         model = treeview.get_model()
         self.timelineswitchsuc = None
-        #self.prnt.debuggee.send('switch_timeline %s\n' % model[row][0])
-        #self.prnt.handle_debuggee_output()
-        # TODO: this is not correct here. There is no parent.
         self.dbgcom.sendLine('switch_timeline %s\n' % model[row][0])
-        if self.dbgcom.timelineswitchsuc:
-            for e in self.treestore:
-                e[1]='white'
-            text = model[row][0]
-            model[row][1] = 'green'
-            #print "activated", treeview, text
+
+        #if self.dbgcom.timelineswitchsuc:
+        #    for e in self.treestore:
+        #        e[1]='white'
+        #    text = model[row][0]
+        #    model[row][1] = 'green'
+
+    def new_active_timeline(self, name):
+        for e in self.treestore:
+            text = e[0]
+            if text == name:
+                e[1] = 'green'
+            else:
+                e[1] = 'white'
+
             
     def add_timeline(self, name):
         for e in self.treestore:

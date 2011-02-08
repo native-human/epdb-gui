@@ -11,6 +11,7 @@ import gtk
 import gtksourceview2
 import gobject
 import pango
+import tempfile
 
 import sys
 import os.path
@@ -29,7 +30,7 @@ from resourcebox import ResourceBox
 from editwindow import EditWindow
 from messagebox import MessageBox
 
-from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom
+from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom, DbgProcessProtocol
 from guiactions import GuiActions
 
 IMAGEDIR = "/usr/share/gepdb"
@@ -69,7 +70,7 @@ class GuiPdb:
 
     def append_output(self, txt):
         iter = self.outputbox.outputbuffer.get_end_iter()
-        print "append_txt", repr(txt)
+        #print "append_txt", repr(txt)
         self.outputbox.outputbuffer.insert(iter, txt)
         self.outputbox.output.scroll_mark_onscreen(self.outputbox.outputbuffer.get_insert())
 
@@ -90,24 +91,28 @@ class GuiPdb:
             self.outputbox.debugbuffer.set_text('')
             self.timelinebox.reset()
             txt = open(self.filename, 'r').read()
-            # Delete breakpoints
-            #self.breakpointdict = {}
-            #start = self.textbuffer.get_start_iter()
-            #end = self.textbuffer.get_end_iter()
-            #self.textbuffer.remove_source_marks(start, end, category=None)
-            #self.textbuffer.set_text(txt)
             
             self.snapshotbox.clear_snapshots()
             self.resourcebox.clear_resources()
             self.timelinebox.reset()
             self.varbox.reset()
             self.parameters = ""
-            self.debuggercom.new_debuggee(self.filename, self.parameters)
+            #self.debuggercom.new_debuggee(self.filename, self.parameters)
+            self.debuggercom.quit()
+            self.dbgprocess = DbgProcessProtocol(self.guiactions)
+            self.tempfilename = tempfile.mktemp(dir=self.tempdir)
+            factory = DbgComFactory(self.guiactions)
+            if self.listen:
+                self.listen.stopListening()
+            self.listen = reactor.listenUNIX(self.tempfilename, factory)
+            r = reactor.spawnProcess(self.dbgprocess, 'epdb', ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
+            #r = reactor.spawnProcess(self.dbgprocess, 'wc', ["wc", self.filename])
+            #print "Reactor.SpawnProcess called: ", r, self.dbgprocess
             self.toolbar.activate()
             chooser.destroy()
             
         chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
-        chooser.set_current_folder("/home/patrick/myprogs/gui")
+        #chooser.set_current_folder("/home/patrick/myprogs/gui")
         chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
         okbutton.connect("clicked", chooser_ok)
@@ -182,10 +187,12 @@ class GuiPdb:
         self.lbvpane.disconnect(self.lbvpane_expose_handlerid)
     
     def __init__(self, *args):
+        self.tempdir = tempfile.mkdtemp()
         self.guiactions = GuiActions(self)
         self.debuggercom = DbgComChooser()
         self.debuggercom.set_active_dbgcom(DebuggerCom(self.guiactions))
         #self.debuggercom = DebuggerCom(self.guiactions)
+        self.listen = None
         
         if len(args) > 0:
             self.filename = args[0]
@@ -290,7 +297,14 @@ class GuiPdb:
         self.toplevelbox.show()
         
         if len(args) > 0:
-            self.debuggercom.new_debuggee(self.filename, self.parameters)
+            #self.debuggercom.new_debuggee(self.filename, self.parameters)
+            self.dbgprocess = DbgProcessProtocol(self.guiactions)
+            self.tempfilename = tempfile.mktemp(dir=self.tempdir)
+            factory = DbgComFactory(self.guiactions)
+            self.listen = reactor.listenUNIX(self.tempfilename, factory)
+            r = reactor.spawnProcess(self.dbgprocess, 'epdb', ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
+            #r = reactor.spawnProcess(self.dbgprocess, 'wc', ["wc", self.filename])
+            #print "Reactor.SpawnProcess called: ", r, self.dbgprocess
             #p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', self.filename], stdout=sp.PIPE)
         
         if not self.debuggercom.is_active():
@@ -301,13 +315,12 @@ class GuiPdb:
         self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     
     def main(self):
-        try:
-            factory = DbgComFactory(self.guiactions)
-            reactor.listenUNIX('/tmp/dbgcom', factory)
-            reactor.run()
-            gtk.main()
-        except KeyboardInterrupt:
-            print 'Cleanup'
-            gtk.main_quit()
-            self.debuggercom.quit()
-            reactor.stop()
+        #try:
+        self.reactor = reactor
+        reactor.run()
+        gtk.main()
+        #except KeyboardInterrupt:
+        #    print 'Cleanup'
+        #    gtk.main_quit()
+        #    self.debuggercom.quit()
+        #    reactor.stop()
