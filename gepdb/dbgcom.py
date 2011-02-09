@@ -30,7 +30,7 @@ class DbgComProtocol(basic.LineReceiver):
                     self.guiactions.show_line(m.group(1), lineno)
                     #self.sendLine("step")
             else:
-                print 'ERROR in lineinfo'
+                print 'ERROR in lineinfo:', args
         elif cmd == "ic":
             self.guiactions.set_ic(args)
         elif cmd == "mode":
@@ -70,6 +70,9 @@ class DbgComProtocol(basic.LineReceiver):
         elif cmd == "switched to timeline":
             bpid = args
             self.guiactions.new_active_timeline(args)
+        elif cmd == "debugmessage":
+            message = args
+            self.guiactions.append_debugbuffer(args.rstrip()+"\n")
         else:
             print "other cmd: ", cmd, args
     

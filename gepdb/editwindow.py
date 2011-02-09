@@ -246,7 +246,8 @@ class TabHeader(gtk.HBox):
         gtk.HBox.__init__(self)
         self.closefunc = closefunc
         self.show()
-        label = gtk.Label(name)
+        label = gtk.Label(os.path.basename(name))
+        label.set_tooltip_text(name)
         label.show()
         labelbutton = gtk.Button()
         labelbutton.connect('clicked', self.on_close_click)
@@ -279,7 +280,7 @@ class EditWindow(gtk.Notebook):
             absfn = os.path.abspath(fn)
             page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
             closefunc = self.gen_callback_delete_page(absfn)
-            labelbox = TabHeader(os.path.basename(fn), closefunc)
+            labelbox = TabHeader(absfn, closefunc)
             self.label_dict[absfn] = labelbox
             #self.label_dict[absfn] = label = gtk.Label(os.path.basename(fn))
             self.append_page(page, labelbox)
@@ -322,7 +323,7 @@ class EditWindow(gtk.Notebook):
             #print "Could not find filename", filename
             absfn = os.path.abspath(filename)
             page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
-            labelbox = TabHeader(os.path.basename(filename), closefunc = self.gen_callback_delete_page(absfn))
+            labelbox = TabHeader(absfn, closefunc = self.gen_callback_delete_page(absfn))
             self.label_dict[absfn] = labelbox
             self.append_page(self.content_dict[absfn], labelbox)
             page_num = self.page_num(page)
