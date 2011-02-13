@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=gepdb
+Comment=Graphical user interface for epdb, the reversible Python debugger
+Exec=gepdb
+Icon=/usr/share/gepdb/bug.png
+Terminal=0
+Type=Application
+Encoding=UTF-8
+Categories=Application;Development;
