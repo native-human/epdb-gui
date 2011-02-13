@@ -13,18 +13,20 @@ import re
 import argparse
 
 class OutputBox(gtk.Notebook):
-    def __init__(self, dbgcom, guiactions):
+    def __init__(self, guiactions):
         gtk.Notebook.__init__(self)
         self.input_from_user = True
-        self.dbgcom = dbgcom
         self.guiactions = guiactions
+        self.debugbox = gtk.VBox()
         self.debugbuffer = gtk.TextBuffer()
         self.debug = gtk.TextView(self.debugbuffer)
-        self.debug.set_editable(False)
+        self.debug.set_editable(True)
         
         self.debug_sw = gtk.ScrolledWindow()
         self.debug_sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.debug_sw.add(self.debug)
+        
+        self.clear_button = gtk.Button("Clear")
         
         self.texttagtable = gtk.TextTagTable()
         self.texttag_editable = gtk.TextTag("editable")	
@@ -54,13 +56,21 @@ class OutputBox(gtk.Notebook):
         self.debug_tab_lbl = gtk.Label('Debug')
         self.debug_tab_lbl.show()
         
+        self.clear_buttonbox = gtk.HBox()
+        self.clear_buttonbox.show()
+        self.clear_buttonbox.pack_end(self.clear_button, False, False)
+        self.clear_button.connect('clicked', self.on_clear_clicked)
+        self.debugbox.pack_start(self.clear_buttonbox, False, False)
+        self.debugbox.pack_start(self.debug_sw)
         self.append_page(self.outputbox, self.output_tab_lbl)
-        self.append_page(self.debug_sw, self.debug_tab_lbl)
+        self.append_page(self.debugbox, self.debug_tab_lbl)
         self.show()
         self.output.show()
         self.output_sw.show()
+        self.debugbox.show()
         self.debug.show()
         self.debug_sw.show()
+        self.clear_button.show()
         
     def on_output_mark_set(self, textbuffer, iter, textmark):
         if textmark.get_name() == 'insert' and iter.has_tag(self.texttag_editable):
@@ -106,6 +116,9 @@ class OutputBox(gtk.Notebook):
         self.debug_tab_lbl.modify_font(font_desc)
         self.output_tab_lbl.modify_font(font_desc)
         
+    def on_clear_clicked(self, button):
+        self.debugbuffer.set_text('')
+
     def append_output(self, text):
         #print "append output", repr(text), len(text)
         self.input_from_user = False

@@ -46,6 +46,9 @@ class GuiPdb:
           <menu action="View">
             <menuitem action="ChangeFont"/>
           </menu>
+          <menu action="Help">
+            <menuitem action="About"/>
+          </menu>
         </menubar>
         </ui>'''
     unused = """
@@ -66,6 +69,7 @@ class GuiPdb:
         print "destroy signal occurred"
         self.debuggercom.quit()
         gtk.main_quit()
+        print "Stop reactor"
         reactor.stop()
 
     def append_output(self, txt):
@@ -79,6 +83,23 @@ class GuiPdb:
         self.outputbox.debugbuffer.insert(iter, txt)
         self.outputbox.debug.scroll_mark_onscreen(self.outputbox.debugbuffer.get_insert())
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
+    
+    def on_about_dlg(self, widget, data=None):
+        print "ABOUT"
+        about = gtk.AboutDialog()
+        about.set_program_name("gepdb")
+        about.set_version("0.1rc1")
+        about.set_copyright("(c) Patrick Sabin")
+        about.set_comments("Graphical user interface for the reversible debugger epdb")
+        about.set_website("http://code.google.com/p/epdb")
+        
+        bugicon = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"bug.png"), 64, 64)
+        about.set_icon_list(bugicon)
+        logo = gtk.gdk.pixbuf_new_from_file(os.path.join(IMAGEDIR,"bug.png"))
+        about.set_logo(logo)
+        about.run()
+        about.destroy()
+
     
     def open_clicked(self, widget, data=None):
         def chooser_cancel(widget, data=None):
@@ -226,6 +247,8 @@ class GuiPdb:
                                  ('View', None, '_View'),
                                  ('ChangeFont', None, 'Change Font ...', None, 'Change Font', self.changefontdlg),
                                  ('RadioBand', None, '_Radio Band'),
+                                 ('Help', gtk.STOCK_HELP, '_Help'),
+                                 ('About', gtk.STOCK_ABOUT, '_About', None, 'Show About dialog', self.on_about_dlg),
                                  #('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)
                                  ])
         actiongroup.get_action('Quit').set_property('short-label', '_Quit')
@@ -265,7 +288,7 @@ class GuiPdb:
         self.mainbox.pack_start(self.messagebox, False, False, 0)
         self.mainbox.pack_start(self.vpaned, True, True, 0)
         self.vpaned.pack1(self.edit_window, resize=True, shrink=True)
-        self.outputbox = OutputBox(self.debuggercom, self.guiactions)
+        self.outputbox = OutputBox(self.guiactions)
         self.vpaned.pack2(self.outputbox, resize=False, shrink=False)
         
         self.toplevelhpaned1.pack1(self.leftbox, resize=False, shrink=False)
