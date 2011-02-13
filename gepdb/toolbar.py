@@ -75,6 +75,7 @@ class Toolbar(gtk.HBox):
         self.rstep.set_sensitive(True)
         self.rnext.set_sensitive(True)
         self.restart.set_sensitive(True)
+        self.snapshot.set_sensitive(True)
 
     def deactivate(self):
         self.next.set_sensitive(False)
@@ -84,6 +85,7 @@ class Toolbar(gtk.HBox):
         self.rstep.set_sensitive(False)
         self.rnext.set_sensitive(False)
         self.restart.set_sensitive(False)
+        self.snapshot.set_sensitive(False)
         
     
     def rstep_click(self, widget, data=None):

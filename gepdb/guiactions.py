@@ -1,4 +1,7 @@
+import tempfile
+import config
 
+from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom, DbgProcessProtocol
 
 class GuiActions:
     def __init__(self, window):
@@ -106,3 +109,34 @@ class GuiActions:
     
     def new_active_timeline(self, timelinename):
         self.window.timelinebox.new_active_timeline(timelinename)
+        
+    def new_program(self, filename, parameters=[]):
+        # TODO ask if the user wants to close the running debugging session.
+        self.window.outputbox.outputbuffer.set_text('')
+        self.window.outputbox.debugbuffer.set_text('')
+        self.window.timelinebox.reset()
+        self.window.snapshotbox.clear_snapshots()
+        self.window.resourcebox.clear_resources()
+        self.window.timelinebox.reset()
+        self.window.varbox.reset()
+        self.window.parameters = parameters
+        
+        self.window.debuggercom.quit()
+        self.window.dbgprocess = DbgProcessProtocol(self)
+        self.window.tempfilename = tempfile.mktemp(dir=self.window.tempdir)
+        factory = DbgComFactory(self)
+        if self.window.listen:
+            self.window.listen.stopListening()
+        self.window.listen = self.window.reactor.listenUNIX(self.window.tempfilename, factory)
+        r = self.window.reactor.spawnProcess(self.window.dbgprocess, 'epdb', ["epdb", "--uds", self.window.tempfilename, filename]+parameters, usePTY=True)
+        config.save_program_access(filename)
+        self.window.toolbar.activate()
+        self.window.edit_window.startpage.update_programs()
+        
+    def open_file(self, filename):
+        "Open a new file without executing it"
+        self.window.edit_window.open_page(filename)
+        
+    def start_page(self):
+        "View a start page in the main notebook"
+        self.window.edit_window.start_page()

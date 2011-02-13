@@ -18,9 +18,7 @@ class ResourceBox(gtk.VBox):
         self.dbgcom = dbgcom
 
         self.treestore = gtk.TreeStore(str, str)
-        self.treestore.append(None, ('Test','Loc'))
         self.var_renderer = gtk.CellRendererText()
-        #self.timeline_renderer.set_property('background', 'red')
         self.lbl = gtk.Label('Resources')
         self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
@@ -31,7 +29,6 @@ class ResourceBox(gtk.VBox):
         self.scrolledwindow.show()
         
         self.treeview.show()
-        #print "Treestore", self.treestore.append(None, ('Blah','blue', 'green'))
         self.treedict = {}
         self.tvcolumn1 = gtk.TreeViewColumn('Column 0', self.var_renderer, text=0)
         self.tvcolumn2 = gtk.TreeViewColumn('Column 1', self.var_renderer, text=1)
@@ -39,7 +36,6 @@ class ResourceBox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn1)
         self.treeview.append_column(self.tvcolumn2)
         
-        #self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.scrolledwindow, True, True, 0)
         self.scrolledwindow.add(self.treeview)
@@ -56,8 +52,6 @@ class ResourceBox(gtk.VBox):
         iter = self.treestore.append(None, (type, location))
         self.iter_dict[(type,location)] = iter
         self.rows += 1
-        #self.treestore.append(iter, ('Test', 'Test'))
-        #self.treestore.append(iter, ('Test', 'Test'))
         
     def add_resource_entry(self, type, location, ic, id):
         "Add resource data to the resource"

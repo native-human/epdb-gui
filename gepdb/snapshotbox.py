@@ -18,9 +18,7 @@ class SnapshotBox(gtk.VBox):
         self.dbgcom = dbgcom
 
         self.treestore = gtk.TreeStore(str, str)
-        self.treestore.append(None, ('Test','Loc'))
         self.var_renderer = gtk.CellRendererText()
-        #self.timeline_renderer.set_property('background', 'red')
         self.lbl = gtk.Label('Snapshots')
         self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)

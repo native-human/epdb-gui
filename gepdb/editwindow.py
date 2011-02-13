@@ -12,8 +12,11 @@ import keyword, token, tokenize, cStringIO, string
 import pexpect
 import re
 import argparse
+import config
 
 IMAGEDIR = "/usr/share/gepdb"
+
+#if not os.path.exists(os.path.join(CONFIG_DIR, CONFIG_NAME)):
 
 class Breakpoint:
     def __init__(self, filename, lineno, id):
@@ -76,6 +79,82 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.add(self.text)
         self.show()
     
+class StartPage(gtk.HBox):
+    def __init__(self, guiactions, dbgcom):
+        gtk.HBox.__init__(self)
+        self.dbgcom = dbgcom
+        self.guiactions = guiactions
+        self.treestore = gtk.TreeStore(str, str)
+        self.treeview = gtk.TreeView(self.treestore)
+        self.treeview.connect("row-activated", self.on_treeview_activated)
+        self.recently_used_programs = self.treestore.append(None, ["Recently used programs", None])
+        for filename, date in config.get_latest_programs():
+            self.treestore.append(self.recently_used_programs, [filename, date])
+        self.recently_used_files = self.treestore.append(None, ["Recently used files", None])
+        for filename, date in config.get_latest_files():
+            self.treestore.append(self.recently_used_files, [filename, date])
+        
+        self.treeview.show()
+        self.column1 = gtk.TreeViewColumn('Column 1')
+        self.treeview.append_column(self.column1)
+        self.cellrenderer = gtk.CellRendererText()
+        self.column1.pack_start(self.cellrenderer, True)
+        self.column1.add_attribute(self.cellrenderer, 'text', 0)
+
+
+        self.treeview.set_headers_visible(False)
+        self.pack_start(self.treeview, True, True)
+        self.show()
+    
+    def on_treeview_activated(self, treeview, row, col):
+        model = treeview.get_model()
+        print "treeview activated", row, col
+        #model[row][col]
+        if len(row) == 2 and model[row[0]][0] == 'Recently used programs':
+            print "Activate", model[row][0]
+            self.guiactions.new_program(model[row][0])
+        if len(row) == 2 and model[row[0]][0] == 'Recently used files':
+            self.guiactions.open_file(model[row][0])
+            
+    def update_programs(self):
+        # count number of children
+        count = 0
+        iter = self.treestore.iter_children(self.recently_used_programs)
+        while iter:
+            count += 1
+            iter = self.treestore.iter_next(iter)
+        
+        # Get all the filenames and insert into the treestore
+        for filename, date in config.get_latest_programs():
+            self.treestore.append(self.recently_used_programs, [filename, date])
+        
+        # Remove old entries
+        iter = self.treestore.iter_children(self.recently_used_programs)
+        while self.treestore.iter_is_valid(iter) and count > 0:
+            count -= 1
+            self.treestore.remove(iter)
+            
+        #And now the same with recently_used_files
+
+    def update_files(self):
+        # count number of children
+        count = 0
+        iter = self.treestore.iter_children(self.recently_used_files)
+        while iter:
+            count += 1
+            iter = self.treestore.iter_next(iter)
+        
+        # Get all the filenames and insert into the treestore
+        for filename, date in config.get_latest_files():
+            self.treestore.append(self.recently_used_files, [filename, date])
+        
+        # Remove old entries
+        iter = self.treestore.iter_children(self.recently_used_files)
+        while iter and self.treestore.iter_is_valid(iter) and count > 0:
+            count -= 1
+            self.treestore.remove(iter)
+
+
 class DebugPage(gtk.HBox):
     def __init__(self, dbgcom, filename, bp_collection):
         gtk.HBox.__init__(self)
@@ -83,6 +162,8 @@ class DebugPage(gtk.HBox):
         self.filename = filename
         with open(filename, 'r') as f:
             text = f.read()
+        print "Save file access", filename
+        config.save_file_access(filename)
         self.sourceview = ScrolledSourceView()
         self.textbuffer = self.sourceview.textbuffer
         self.text = self.sourceview.text
@@ -196,42 +277,14 @@ class DebugPage(gtk.HBox):
         #print "toggle breakpoint", self.breakpointlineno
         if not self.bp_collection.has_loc(self.filename, self.breakpointlineno):
             self.dbgcom.sendLine('break {0}:{1}'.format(self.filename, self.breakpointlineno))
-            #self.dbgcom.handle_debuggee_output()
-            #if self.dbgcom.breakpointsuccess:
-            #    mark = self.textbuffer.create_source_mark(None, "breakpoint",
-            #            self.textbuffer.get_iter_at_line(self.breakpointlineno-1))
-            #    print "Make breakpoint with no", self.dbgcom.breakpointno
-            #    self.breakpointdict[self.breakpointlineno] = self.dbgcom.breakpointno
-            #else:
-            #    print "No breakpoint setting success"
-            #    "TODO put can't set breakpoint into status line"
-                #print self.breakpointdict
         else:
             bp = self.bp_collection.get_by_loc(self.filename, self.breakpointlineno)
             if not bp:
                 print "TODO put error in status line"
                 return
             
-            #self.clearbpsuccess = None
             print "Clear Breakpoint {0}".format(bp.id)
             self.dbgcom.sendLine('clear {0}\n'.format(bp.id))
-            #self.debuggee.send('clear {0}\n'.format(bpno))
-            #self.handle_debuggee_output()
-            #if self.dbgcom.clearbpsuccess == True:
-            #    start = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
-            #    end = self.textbuffer.get_iter_at_line(self.breakpointlineno-1)
-            #    self.textbuffer.remove_source_marks(start, end, category=None)
-            #    print "before deletion", self.breakpointdict
-            #    del self.breakpointdict[self.breakpointlineno]
-            #    print "after deletion", self.breakpointdict
-            #    "Toggle breakpoint"
-            #    "clear from dictionary"
-            #elif self.dbgcom.clearbpsuccess == False:
-            #    print "Couldn't delete breakpoint"
-            #    "Error message"
-            #else:
-            #    print 'Critical Error', self.clearbpsuccess
-            #print "Deleting breakpoints not implemented yet"
     
     def reset(self):
         "Resets all breakpoints"
@@ -268,14 +321,20 @@ class TabHeader(gtk.HBox):
             self.closefunc()
             
 class EditWindow(gtk.Notebook):
-    def __init__(self, dbgcom, *filenames):
+    def __init__(self, guiactions, dbgcom, *filenames):
         gtk.Notebook.__init__(self)
         self.bp_collection = BreakpointCollection()
         self.dbgcom = dbgcom
+        self.guiactions = guiactions
         self.set_tab_pos(gtk.POS_TOP)
         #self.set_tab_pos(gtk.POS_LEFT)
         self.content_dict = {}
         self.label_dict = {}
+        # Show Start Page
+        self.startpage = StartPage(self.guiactions, self.dbgcom)
+        self.start_page()
+        
+        # Show all filenames in EditWindow
         for fn in filenames:
             absfn = os.path.abspath(fn)
             page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
@@ -284,6 +343,7 @@ class EditWindow(gtk.Notebook):
             self.label_dict[absfn] = labelbox
             #self.label_dict[absfn] = label = gtk.Label(os.path.basename(fn))
             self.append_page(page, labelbox)
+            self.set_tab_reorderable(page, True)
         self.show()
         rcstyle = """style "my-button-style"
             {
@@ -296,6 +356,17 @@ class EditWindow(gtk.Notebook):
         gtk.rc_parse_string(rcstyle)
         self.activepage = None
 
+    def start_page(self):
+        """Add a start page to the notebook, if it doesn't already exists"""
+        if 'Start Page' in self.content_dict:
+            return
+        self.content_dict['Start Page'] = self.startpage
+        closefunc = self.gen_callback_delete_page('Start Page')
+        labelbox = TabHeader('Start Page', closefunc)
+        self.label_dict['Start Page'] = labelbox
+        self.append_page(self.startpage, labelbox)
+        self.set_tab_reorderable(self.startpage, True)
+
     def gen_callback_delete_page(self, absfilename):
         def retfunc():
             page = self.content_dict[absfilename]
@@ -306,6 +377,17 @@ class EditWindow(gtk.Notebook):
             #self.label_dict.remove
         return retfunc
 
+    def open_page(self, absfn):
+        page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
+        self.startpage.update_files()
+        labelbox = TabHeader(absfn, closefunc = self.gen_callback_delete_page(absfn))
+        self.label_dict[absfn] = labelbox
+        self.append_page(self.content_dict[absfn], labelbox)
+        self.set_tab_reorderable(self.content_dict[absfn], True)
+        page_num = self.page_num(page)
+        self.set_current_page(page_num)
+        return page
+    
     def show_line(self, filename, lineno):
         try:
             page = self.content_dict[filename]
@@ -320,14 +402,10 @@ class EditWindow(gtk.Notebook):
                 self.activepage = page
                 self.activepage.highlight()
         except KeyError:
-            #print "Could not find filename", filename
+            # Create new page
             absfn = os.path.abspath(filename)
-            page = self.content_dict[absfn] = DebugPage(self.dbgcom, absfn, self.bp_collection)
-            labelbox = TabHeader(absfn, closefunc = self.gen_callback_delete_page(absfn))
-            self.label_dict[absfn] = labelbox
-            self.append_page(self.content_dict[absfn], labelbox)
-            page_num = self.page_num(page)
-            self.set_current_page(page_num)
+            page = self.open_page(absfn)
+
             if self.activepage:
                 self.activepage.unhighlight()
             page.show_line(lineno)

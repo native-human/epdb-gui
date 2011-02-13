@@ -10,8 +10,5 @@ gepdb [\fIfilename\fP]
 .PP
 gepdb is a front-end for epdb - a reversible debugger for Python
 .PP
-.SH FILES
-.PP
-$HOME/.config/epdb
 .SH BUGS
 A lot.

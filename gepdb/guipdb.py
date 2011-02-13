@@ -33,6 +33,8 @@ from messagebox import MessageBox
 from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom, DbgProcessProtocol
 from guiactions import GuiActions
 
+import config
+
 IMAGEDIR = "/usr/share/gepdb"
     
 class GuiPdb:
@@ -40,10 +42,12 @@ class GuiPdb:
         <menubar name="MenuBar">
           <menu action="File">
             <menuitem action="Open"/>
+            <menuitem action="OpenFile"/>
             <separator/>
             <menuitem action="Quit"/>
           </menu>
           <menu action="View">
+            <menuitem action="StartPage"/>
             <menuitem action="ChangeFont"/>
           </menu>
           <menu action="Help">
@@ -101,35 +105,42 @@ class GuiPdb:
         about.destroy()
 
     
+    def start_page_clicked(self, widget, data=None):
+        self.guiactions.start_page()
+        #print "Start page clicked"
+
+    def open_file_clicked(self, widget, data=None):
+        def chooser_cancel(widget, data=None):
+            chooser.destroy()
+
+        def chooser_ok(widget, data=None):
+            self.filename = chooser.get_filename()
+            
+            self.guiactions.open_file(self.filename)
+            chooser.destroy()
+        
+        chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
+        #chooser.set_current_folder("/home/patrick/myprogs/gui")
+        chooser.connect("file-activated", chooser_ok)
+        okbutton = gtk.Button(stock=gtk.STOCK_OK)
+        okbutton.connect("clicked", chooser_ok)
+        okbutton.show()
+        cancelbutton = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancelbutton.connect("clicked", chooser_cancel)
+        cancelbutton.show()
+        chooser.action_area.pack_start(cancelbutton, False, False, 0)
+        chooser.action_area.pack_start(okbutton, False, False, 0)
+        chooser.show()
+     
+    
     def open_clicked(self, widget, data=None):
         def chooser_cancel(widget, data=None):
             chooser.destroy()
 
         def chooser_ok(widget, data=None):
-            #print "chooser ok", chooser.get_filename()
             self.filename = chooser.get_filename()
-            self.outputbox.outputbuffer.set_text('')
-            self.outputbox.debugbuffer.set_text('')
-            self.timelinebox.reset()
-            txt = open(self.filename, 'r').read()
             
-            self.snapshotbox.clear_snapshots()
-            self.resourcebox.clear_resources()
-            self.timelinebox.reset()
-            self.varbox.reset()
-            self.parameters = ""
-            #self.debuggercom.new_debuggee(self.filename, self.parameters)
-            self.debuggercom.quit()
-            self.dbgprocess = DbgProcessProtocol(self.guiactions)
-            self.tempfilename = tempfile.mktemp(dir=self.tempdir)
-            factory = DbgComFactory(self.guiactions)
-            if self.listen:
-                self.listen.stopListening()
-            self.listen = reactor.listenUNIX(self.tempfilename, factory)
-            r = reactor.spawnProcess(self.dbgprocess, 'epdb', ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
-            #r = reactor.spawnProcess(self.dbgprocess, 'wc', ["wc", self.filename])
-            #print "Reactor.SpawnProcess called: ", r, self.dbgprocess
-            self.toolbar.activate()
+            self.guiactions.new_program(self.filename)
             chooser.destroy()
             
         chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
@@ -208,6 +219,7 @@ class GuiPdb:
         self.lbvpane.disconnect(self.lbvpane_expose_handlerid)
     
     def __init__(self, *args):
+        self.reactor = reactor
         self.tempdir = tempfile.mkdtemp()
         self.guiactions = GuiActions(self)
         self.debuggercom = DbgComChooser()
@@ -243,12 +255,16 @@ class GuiPdb:
                                   'Quit the Program', self.destroy),
                                  ('Open', gtk.STOCK_OPEN, '_Open ...', None,
                                   'Open a new file for debugging', self.open_clicked),
+                                 ('OpenFile', None, '_Open File...', None,
+                                  'Open a new file for viewing', self.open_file_clicked),
                                  ('File', None, '_File'),
                                  ('View', None, '_View'),
                                  ('ChangeFont', None, 'Change Font ...', None, 'Change Font', self.changefontdlg),
                                  ('RadioBand', None, '_Radio Band'),
                                  ('Help', gtk.STOCK_HELP, '_Help'),
                                  ('About', gtk.STOCK_ABOUT, '_About', None, 'Show About dialog', self.on_about_dlg),
+                                 ('StartPage', None, '_Start Page', None,
+                                  'View the start Page', self.start_page_clicked),
                                  #('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)
                                  ])
         actiongroup.get_action('Quit').set_property('short-label', '_Quit')
@@ -278,7 +294,7 @@ class GuiPdb:
         self.rightbox.show()
         
         self.mainbox = gtk.VBox()
-        self.edit_window = EditWindow(self.debuggercom)
+        self.edit_window = EditWindow(self.guiactions, self.debuggercom)
         self.edit_window.show()
         
         self.messagebox = MessageBox()
@@ -326,10 +342,7 @@ class GuiPdb:
             factory = DbgComFactory(self.guiactions)
             self.listen = reactor.listenUNIX(self.tempfilename, factory)
             r = reactor.spawnProcess(self.dbgprocess, 'epdb', ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
-            #r = reactor.spawnProcess(self.dbgprocess, 'wc', ["wc", self.filename])
-            #print "Reactor.SpawnProcess called: ", r, self.dbgprocess
-            #p = sp.Popen(["python3", "/usr/lib/python3.1/dist-packages/epdb.py", "--uds", '/tmp/dbgcom', self.filename], stdout=sp.PIPE)
-        
+
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
         
@@ -339,7 +352,6 @@ class GuiPdb:
     
     def main(self):
         #try:
-        self.reactor = reactor
         reactor.run()
         gtk.main()
         #except KeyboardInterrupt:
