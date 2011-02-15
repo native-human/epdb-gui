@@ -1,16 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 class Varbox(gtk.VBox):
     def __init__(self, dbgcom, guiactions):
@@ -65,11 +55,10 @@ class Varbox(gtk.VBox):
         
     def add_var(self, name):
         if name in self.treedict:
-            #self.prnt.statusbar.message("Variable name already exists")
             self.guiactions.statusbar_message("Variable name already exists")
         else:
-            id = self.treestore.append(None, (name, None, 'white'))
-            self.treedict[name] = id
+            _id = self.treestore.append(None, (name, None, 'white'))
+            self.treedict[name] = _id
             self.entry.set_text('')
         self.update_all_variables()
 
@@ -82,13 +71,8 @@ class Varbox(gtk.VBox):
         self.add_var(txt)
 
     def update_all_variables(self):
-        #print("update variable")
         for var in self.treestore:
-            #print var, var[0]
-            #print 'p %s\n' % var[0]
             self.dbgcom.sendLine('p %s\n' % var[0])
-            #self.prnt.debuggee.send('p %s\n' % var[0])
-            #self.prnt.handle_debuggee_output()
     
     def update_variable(self, var, value):
         #print 'update variable', self.treestore.get(self.treedict[var],0,1)

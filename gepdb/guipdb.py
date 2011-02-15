@@ -1,24 +1,15 @@
 
-import twisted
 from twisted.internet import gtk2reactor
 gtk2reactor.install()
-from twisted.internet import interfaces, reactor, protocol, error, address, defer, utils
-from twisted.protocols import basic
+from twisted.internet import reactor
 import pygtk
 
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
 import pango
 import tempfile
 
-import sys
 import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 from timelinebox import TimelineBox
 from varbox import Varbox
@@ -30,10 +21,8 @@ from resourcebox import ResourceBox
 from editwindow import EditWindow
 from messagebox import MessageBox
 
-from dbgcom import DbgComChooser, DbgComFactory, DbgComProtocol, DebuggerCom, DbgProcessProtocol
+from dbgcom import DbgComChooser, DbgComFactory, DbgProcessProtocol
 from guiactions import GuiActions
-
-import config
 
 IMAGEDIR = "/usr/share/gepdb"
     
@@ -82,10 +71,10 @@ class GuiPdb:
         self.outputbox.outputbuffer.insert(iter, txt)
         self.outputbox.output.scroll_mark_onscreen(self.outputbox.outputbuffer.get_insert())
 
-    def append_debugbuffer(self, txt):
-        iter = self.outputbox.debugbuffer.get_end_iter()
-        self.outputbox.debugbuffer.insert(iter, txt)
-        self.outputbox.debug.scroll_mark_onscreen(self.outputbox.debugbuffer.get_insert())
+    #def append_debugbuffer(self, txt):
+    #    iter = self.outputbox.debugbuffer.get_end_iter()
+    #    self.outputbox.debugbuffer.insert(iter, txt)
+    #    self.outputbox.debug.scroll_mark_onscreen(self.outputbox.debugbuffer.get_insert())
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
     
     def on_about_dlg(self, widget, data=None):
@@ -119,7 +108,7 @@ class GuiPdb:
             self.guiactions.open_file(self.filename)
             chooser.destroy()
         
-        chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
+        chooser = gtk.FileChooserDialog(title=None, action=gtk.FILE_CHOOSER_ACTION_OPEN)
         #chooser.set_current_folder("/home/patrick/myprogs/gui")
         chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
@@ -143,7 +132,7 @@ class GuiPdb:
             self.guiactions.new_program(self.filename)
             chooser.destroy()
             
-        chooser = gtk.FileChooserDialog(title=None,action=gtk.FILE_CHOOSER_ACTION_OPEN)
+        chooser = gtk.FileChooserDialog(title=None, action=gtk.FILE_CHOOSER_ACTION_OPEN)
         #chooser.set_current_folder("/home/patrick/myprogs/gui")
         chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
@@ -223,7 +212,7 @@ class GuiPdb:
         self.tempdir = tempfile.mkdtemp()
         self.guiactions = GuiActions(self)
         self.debuggercom = DbgComChooser()
-        self.debuggercom.set_active_dbgcom(DebuggerCom(self.guiactions))
+        #self.debuggercom.set_active_dbgcom(DebuggerCom(self.guiactions))
         #self.debuggercom = DebuggerCom(self.guiactions)
         self.listen = None
         
@@ -341,12 +330,13 @@ class GuiPdb:
             self.tempfilename = tempfile.mktemp(dir=self.tempdir)
             factory = DbgComFactory(self.guiactions)
             self.listen = reactor.listenUNIX(self.tempfilename, factory)
-            r = reactor.spawnProcess(self.dbgprocess, 'epdb', ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
+            reactor.spawnProcess(self.dbgprocess, 'epdb',
+                ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
 
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
         
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
+        #pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
         
         self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     

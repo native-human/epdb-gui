@@ -1,16 +1,8 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
 
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
+import gobject
 
 class TimelineBox(gtk.VBox):
     def __init__(self, dbgcom, guiactions):
@@ -28,7 +20,6 @@ class TimelineBox(gtk.VBox):
         #
         #self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
         
-        #print 'popup', self.popup
         self.lbl = gtk.Label("Timelines")
         self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
         self.add_timeline('head')
@@ -78,7 +69,7 @@ class TimelineBox(gtk.VBox):
         if event.button == 3:
             x = int(event.x)
             y = int(event.y)
-            time = event.time
+            #time = event.time
             pthinfo = treeview.get_path_at_pos(x, y)
             if pthinfo is not None:
                 path, col, cellx, celly = pthinfo
@@ -91,19 +82,8 @@ class TimelineBox(gtk.VBox):
     def new_timeline(self, name):
         self.dbgcom.newtimelinesuc = None
         self.dbgcom.sendLine('newtimeline %s\n' % name)
-        #self.prnt.handle_debuggee_output()
-        #if self.dbgcom.newtimelinesuc == True:
-        #    self.add_timeline(self.entry.get_text())
-        #else:
-        #    #print self.prnt.newtimelinesuc
-        #    "TODO put failed message into status line"
         self.entry.set_text('')
-        #self.guiactions.update_snapshots()
         
-    #def add_new_timeline(self, name):
-    #    self.add_timeline(name)
-    #    self.guiactions.update_snapshots()
-    #
     def entry_activate(self, entry, event=None):
         return self.new_timeline(entry.get_text())
     
@@ -111,16 +91,9 @@ class TimelineBox(gtk.VBox):
         self.new_timeline(self.entry.get_text())
 
     def on_treeview_activated(self, treeview, row, col):
-        #print "treeview activated", row, col
         model = treeview.get_model()
         self.timelineswitchsuc = None
         self.dbgcom.sendLine('switch_timeline %s\n' % model[row][0])
-
-        #if self.dbgcom.timelineswitchsuc:
-        #    for e in self.treestore:
-        #        e[1]='white'
-        #    text = model[row][0]
-        #    model[row][1] = 'green'
 
     def new_active_timeline(self, name):
         for e in self.treestore:
@@ -133,7 +106,7 @@ class TimelineBox(gtk.VBox):
             
     def add_timeline(self, name):
         for e in self.treestore:
-            e[1]='white'
+            e[1] = 'white'
         self.treestore.append(None, (name,'green'))
     
     def modify_font(self, font_desc):

@@ -1,16 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 class Statusbar(gtk.Statusbar):
     def __init__(self, prnt):

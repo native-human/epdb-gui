@@ -1,19 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
-import tempfile
-
-from dbgcom import DbgProcessProtocol, DbgComFactory
 
 class Toolbar(gtk.HBox):
     def __init__(self, dbgcom, guiactions):
@@ -94,8 +81,7 @@ class Toolbar(gtk.HBox):
 
     def restart_click(self, widget, data=None):
         # TODO make this function work
-        if self.guiactions.window.listen:
-            
+        if self.guiactions.window.listen: 
             params = getattr(self.dbgcom, 'params', '')
             dlgentry = gtk.Entry()
             dlgentry.set_text(params)
@@ -107,24 +93,12 @@ class Toolbar(gtk.HBox):
             dlgentry.show()
             dlglbl.show()
             answer = dialog.run()
-            print "parameter", dlgentry.get_text()
-            self.parameters = dlgentry.get_text() 
+            print "answer", answer
+            if answer == 1:
+                # TODO split parameters correctly, i.e. also consider " and '
+                self.parameters = dlgentry.get_text().split() 
+                self.guiactions.new_program(self.guiactions.window.filename, self.parameters)
             dialog.destroy()
-            
-            ###
-            self.guiactions.reset()
-            
-            # TODO refactor the code so that it doesn't reference guiactions.window
-            reactor = self.guiactions.window.reactor
-            self.guiactions.window.listen.stopListening()
-            self.dbgcom.quit()
-            self.guiactions.window.dbgprocess = DbgProcessProtocol(self.guiactions)
-            self.guiactions.window.tempfilename = tempfile.mktemp(dir=self.guiactions.window.tempdir)
-            factory = DbgComFactory(self.guiactions)
-            self.listen = reactor.listenUNIX(self.guiactions.window.tempfilename, factory)
-            r = reactor.spawnProcess(self.guiactions.window.dbgprocess, 'epdb',
-                            ["epdb", "--uds", self.guiactions.window.tempfilename, self.guiactions.window.filename],
-                            usePTY=True)
         else:
             "TODO error message"
 

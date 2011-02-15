@@ -1,16 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 class OutputBox(gtk.Notebook):
     def __init__(self, guiactions):
@@ -89,7 +79,7 @@ class OutputBox(gtk.Notebook):
             #print "mark set", textbuffer, iter.get_line(), iter.get_tags(), textmark.get_name()
             
     def on_output_insert_text(self, textview, iter, text, length):
-        i = iter.copy()
+        #i = iter.copy()
         if self.input_from_user == False:
             self.input_from_user = True
             return
@@ -127,3 +117,8 @@ class OutputBox(gtk.Notebook):
         #right gravity needed: move left gravity mark to the position of the right gravity mark
         self.outputbuffer.move_mark(self.input_mark_left, self.outputbuffer.get_iter_at_mark(self.input_mark_right))
         self.output.scroll_mark_onscreen(self.outputbuffer.get_insert())
+        
+    def append_debug(self, text):
+        iter = self.debugbuffer.get_end_iter()
+        self.debugbuffer.insert(iter, text)
+        self.debug.scroll_mark_onscreen(self.debugbuffer.get_insert())

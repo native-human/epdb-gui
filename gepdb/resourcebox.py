@@ -1,16 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 class ResourceBox(gtk.VBox):
     def __init__(self, dbgcom):
@@ -47,15 +37,15 @@ class ResourceBox(gtk.VBox):
         "Send to the debuggee the request to update the resources"
         self.dbgcom.sendLine('resources')
     
-    def add_resource(self, type, location):
+    def add_resource(self, rtype, location):
         "Add a resource to the store"
-        iter = self.treestore.append(None, (type, location))
-        self.iter_dict[(type,location)] = iter
+        treeiter = self.treestore.append(None, (rtype, location))
+        self.iter_dict[(rtype, location)] = treeiter
         self.rows += 1
         
-    def add_resource_entry(self, type, location, ic, id):
+    def add_resource_entry(self, rtype, location, ric, rid):
         "Add resource data to the resource"
-        self.treestore.append(self.iter_dict[(type,location)], (ic, id))
+        self.treestore.append(self.iter_dict[(rtype, location)], (ric, rid))
         for i in range(self.rows):
             self.treeview.expand_row(str(i), True)
     

@@ -3,26 +3,17 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import gtksourceview2
-import gobject
-import pango
 
-import sys
 import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 import config
 
 IMAGEDIR = "/usr/share/gepdb"
 
-#if not os.path.exists(os.path.join(CONFIG_DIR, CONFIG_NAME)):
-
 class Breakpoint:
-    def __init__(self, filename, lineno, id):
+    def __init__(self, filename, lineno, bpid):
         self.filename = filename
         self.lineno = lineno
-        self.id = id
+        self.id = bpid
 
 class BreakpointCollection:
     def __init__(self):
@@ -48,14 +39,14 @@ class BreakpointCollection:
     def get_by_loc(self, filename, lineno):
         return self.breakpoint_loc_dict[(filename, lineno)]
         
-    def get_by_id(self, id):
-        return self.breakpoint_id_dict[id]
+    def get_by_id(self, bpid):
+        return self.breakpoint_id_dict[bpid]
         
     def has_loc(self, filename, lineno):
         return (filename, lineno) in self.breakpoint_loc_dict
     
-    def has_id(self, id):
-        return id in self.breakpoint_id_dict
+    def has_id(self, bpid):
+        return bpid in self.breakpoint_id_dict
 
 class ScrolledSourceView(gtk.ScrolledWindow):
     def __init__(self):
@@ -153,6 +144,10 @@ class StartPage(gtk.HBox):
         while iter and self.treestore.iter_is_valid(iter) and count > 0:
             count -= 1
             self.treestore.remove(iter)
+    
+    def reset(self):
+        """This is needed for the other pages. The Start Page doesn't change
+        because of an reset"""
 
 
 class DebugPage(gtk.HBox):
@@ -162,7 +157,7 @@ class DebugPage(gtk.HBox):
         self.filename = filename
         with open(filename, 'r') as f:
             text = f.read()
-        print "Save file access", filename
+        #print "Save file access", filename
         config.save_file_access(filename)
         self.sourceview = ScrolledSourceView()
         self.textbuffer = self.sourceview.textbuffer
@@ -242,8 +237,8 @@ class DebugPage(gtk.HBox):
         if self.active:
             visible_rect = widget.get_visible_rect()
             it = self.lineiter
-            y1,y2 = widget.get_line_yrange(it)
-            curline = widget.get_buffer().get_iter_at_mark(widget.get_buffer().get_insert() ).get_line()
+            y1, y2 = widget.get_line_yrange(it)
+            #curline = widget.get_buffer().get_iter_at_mark(widget.get_buffer().get_insert() ).get_line()
             width, height = widget.allocation.width, widget.allocation.height
             context = event.window.cairo_create()
             context.rectangle(0, 0, width, height)
@@ -260,7 +255,7 @@ class DebugPage(gtk.HBox):
         self.textbuffer.place_cursor(self.lineiter)
 
     def set_breakpoint(self, bp):
-        mark = self.textbuffer.create_source_mark(None, "breakpoint",
+        self.textbuffer.create_source_mark(None, "breakpoint",
                     self.textbuffer.get_iter_at_line(bp.lineno-1))
         self.bp_collection.add(bp)
         #self.breakpointdict[(self.filename, lineno)] = bpid

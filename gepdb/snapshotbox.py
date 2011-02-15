@@ -1,16 +1,6 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
-import gtksourceview2
-import gobject
-import pango
-
-import sys
-import os.path
-import keyword, token, tokenize, cStringIO, string
-import pexpect
-import re
-import argparse
 
 class SnapshotBox(gtk.VBox):
     def __init__(self, dbgcom):
@@ -58,9 +48,9 @@ class SnapshotBox(gtk.VBox):
         "Send to the debuggee the request to update the resources"
         self.dbgcom.sendLine('timeline_snapshots')
     
-    def add_snapshot(self, id, ic):
+    def add_snapshot(self, s_id, s_ic):
         "Add a resource to the store"
-        self.treestore.append(None, (id, ic))
+        self.treestore.append(None, (s_id, s_ic))
         
     def clear_snapshots(self):
         "Clears all resources from the window"
@@ -74,5 +64,5 @@ class SnapshotBox(gtk.VBox):
     
     def on_treeview_activated(self, treeview, row, col):
         model = treeview.get_model()
-        self.timelineswitchsuc = None
+        #self.timelineswitchsuc = None
         self.dbgcom.sendLine('activate_snapshot %s\n' % model[row][0])
