@@ -3,11 +3,11 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 import gtksourceview2
+import pkgutil
+import time
 
 import os.path
 import config
-
-IMAGEDIR = "/usr/share/gepdb"
 
 class Breakpoint:
     def __init__(self, filename, lineno, bpid):
@@ -188,8 +188,14 @@ class DebugPage(gtk.HBox):
         self.bp_collection = bp_collection
         
         #self.lineiter = self.textbuffer.get_iter_at_line(0)
-        
-        pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
+        pixbuf_loader = gtk.gdk.PixbufLoader("png")
+        pixbuf_loader.write(pkgutil.get_data("gepdb", "breakpoint.png"))
+        #TODO don't sleep, but connect with the area-prepared signal and do the
+        #     image stuff
+        time.sleep(0.1)
+        pixbuf = pixbuf_loader.get_pixbuf()
+        pixbuf_loader.close()
+        #pixbuf = gtk.gdk.pixbuf_new_from_data(pkgutil.get_data("gepdb", "breakpoint.png"))
         self.text.set_mark_category_icon_from_pixbuf("breakpoint", pixbuf)
         self.text.connect('button-release-event', self.button_release_sv)
         self.text.connect("expose-event", self.textview_expose)

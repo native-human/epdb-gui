@@ -8,8 +8,12 @@ pygtk.require('2.0')
 import gtk
 import pango
 import tempfile
+import pkgutil
+
+import time
 
 import os.path
+import os
 
 from timelinebox import TimelineBox
 from varbox import Varbox
@@ -24,7 +28,6 @@ from messagebox import MessageBox
 from dbgcom import DbgComChooser, DbgComFactory, DbgProcessProtocol
 from guiactions import GuiActions
 
-IMAGEDIR = "/usr/share/gepdb"
     
 class GuiPdb:
     ui = '''<ui>
@@ -78,7 +81,6 @@ class GuiPdb:
         #text_view.scroll_mark_onscreen(text_buffer.get_insert())
     
     def on_about_dlg(self, widget, data=None):
-        print "ABOUT"
         about = gtk.AboutDialog()
         about.set_program_name("gepdb")
         about.set_version("0.1rc1")
@@ -86,10 +88,8 @@ class GuiPdb:
         about.set_comments("Graphical user interface for the reversible debugger epdb")
         about.set_website("http://code.google.com/p/epdb")
         
-        bugicon = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"bug.png"), 64, 64)
-        about.set_icon_list(bugicon)
-        logo = gtk.gdk.pixbuf_new_from_file(os.path.join(IMAGEDIR,"bug.png"))
-        about.set_logo(logo)
+        about.set_icon_list(self.bugicon)
+        about.set_logo(self.bugicon)
         about.run()
         about.destroy()
 
@@ -207,6 +207,23 @@ class GuiPdb:
         self.lbvpane.set_position(rect.height/2)
         self.lbvpane.disconnect(self.lbvpane_expose_handlerid)
     
+    def pixbuf_loaded(self, loader,  x, y, width, height):
+        self.bugicon = self.pixbuf_loader.get_pixbuf()
+        self.pixbuf_loader.close()
+        self.window.set_icon_list(self.bugicon)
+    
+    def find_executable(self, filename):
+        """Looks for an executable and returns its full path, otherwise None"""
+        os.environ["PATH"]
+        path = os.environ["PATH"].split(":")
+        
+        for p in path:
+            joined = os.path.join(p, filename)
+            if os.path.exists(joined):
+                return joined
+        
+        return None
+    
     def __init__(self, *args):
         self.reactor = reactor
         self.tempdir = tempfile.mkdtemp()
@@ -227,10 +244,15 @@ class GuiPdb:
         self.window.connect("delete_event", self.delete_event)
     
         self.window.connect("destroy", self.destroy)
-    
-        bugicon = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"bug.png"), 64, 64)
-        self.window.set_icon_list(bugicon)
-    
+
+        self.pixbuf_loader = gtk.gdk.PixbufLoader("png")
+        self.pixbuf_loader.connect("area-updated", self.pixbuf_loaded)
+        self.pixbuf_loader.write(pkgutil.get_data("gepdb", "bug.png"))
+        self.pixbuf_loader.set_size(64, 64)
+        #TODO don't sleep, but connect with the area-prepared signal and do the
+        #     image stuff
+        #time.sleep(0.1)
+        
         uimanager = gtk.UIManager()
         self.uimanager = uimanager
     
@@ -330,13 +352,14 @@ class GuiPdb:
             self.tempfilename = tempfile.mktemp(dir=self.tempdir)
             factory = DbgComFactory(self.guiactions)
             self.listen = reactor.listenUNIX(self.tempfilename, factory)
-            reactor.spawnProcess(self.dbgprocess, 'epdb',
+            
+            abs_epdb_path = self.find_executable('epdb')
+            reactor.spawnProcess(self.dbgprocess, abs_epdb_path,
                 ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
 
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
         
-        #pixbuf = gtk.gdk.pixbuf_new_from_file_at_size(os.path.join(IMAGEDIR,"breakpoint.png"), 64, 64)
         
         self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
     

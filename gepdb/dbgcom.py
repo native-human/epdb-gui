@@ -18,10 +18,10 @@ class DbgComProtocol(basic.LineReceiver):
     def lineReceived(self, line):
         cmd, _, args = line.partition("#")
         if cmd == 'lineinfo':
-            linematch = re.match('([<>/a-zA-Z0-9_\.]+)\(([0-9]+)\).*', args)
+            linematch = re.match('([<>/a-zA-Z0-9_\.\-]+)\(([0-9]+)\).*', args)
             if linematch:
                 if linematch.group(1) == '<string>':
-                    print 'String'
+                    pass
                 else:
                     lineno = int(linematch.group(2))
                     self.guiactions.show_line(linematch.group(1), lineno)
