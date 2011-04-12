@@ -152,7 +152,9 @@ class GuiActions:
             self.window.listen.stopListening()
         self.window.listen = self.window.reactor.listenUNIX(
                 self.window.tempfilename, factory)
-        self.window.reactor.spawnProcess(self.window.dbgprocess, 'epdb',
+        
+        abs_epdb_path = self.window.find_executable('epdb')
+        self.window.reactor.spawnProcess(self.window.dbgprocess, abs_epdb_path,
             ["epdb", "--uds", self.window.tempfilename, filename] + parameters,
             usePTY=True)
         config.save_program_access(filename)
