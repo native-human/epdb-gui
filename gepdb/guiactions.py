@@ -87,7 +87,6 @@ class GuiActions:
 
     def reset(self):
         "Resets every thing. Usually called before starting another debuggee"
-        print("Reset")
         self.window.outputbox.outputbuffer.set_text('')
         self.window.outputbox.debugbuffer.set_text('')
         self.window.timelinebox.reset()
@@ -136,6 +135,7 @@ class GuiActions:
         # TODO ask if the user wants to close the running debugging session.
         self.window.outputbox.outputbuffer.set_text('')
         self.window.outputbox.debugbuffer.set_text('')
+        self.window.edit_window.restart()
         self.window.timelinebox.reset()
         self.window.snapshotbox.clear_snapshots()
         self.window.resourcebox.clear_resources()

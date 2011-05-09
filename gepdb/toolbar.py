@@ -80,7 +80,6 @@ class Toolbar(gtk.HBox):
         #print('rstep')
 
     def restart_click(self, widget, data=None):
-        # TODO make this function work
         if self.guiactions.window.listen: 
             params = getattr(self.dbgcom, 'params', '')
             dlgentry = gtk.Entry()
@@ -93,7 +92,6 @@ class Toolbar(gtk.HBox):
             dlgentry.show()
             dlglbl.show()
             answer = dialog.run()
-            print "answer", answer
             if answer == 1:
                 # TODO split parameters correctly, i.e. also consider " and '
                 self.parameters = dlgentry.get_text().split() 

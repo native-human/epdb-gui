@@ -415,9 +415,9 @@ class EditWindow(gtk.Notebook):
 
     def restart(self):
         "clear all breakpoints in all files for this debuggee"
-        self.bp_collection.clear()
         for page in self.content_dict.values():
             page.reset()
+        self.bp_collection.clear()
             
     def set_breakpoint(self, bpid, filename, lineno):
         absfilename = os.path.abspath(filename)
