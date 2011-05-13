@@ -1,5 +1,6 @@
 import tempfile
 import config
+import os.path
 
 from dbgcom import DbgComFactory, DbgProcessProtocol
 
@@ -157,7 +158,7 @@ class GuiActions:
         self.window.reactor.spawnProcess(self.window.dbgprocess, abs_epdb_path,
             ["epdb", "--uds", self.window.tempfilename, filename] + parameters,
             usePTY=True)
-        config.save_program_access(filename)
+        config.save_program_access(os.path.abspath(filename))
         self.window.toolbar.activate()
         self.window.edit_window.startpage.update_programs()
         

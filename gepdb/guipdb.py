@@ -27,6 +27,7 @@ from messagebox import MessageBox
 
 from dbgcom import DbgComChooser, DbgComFactory, DbgProcessProtocol
 from guiactions import GuiActions
+import config
 
     
 class GuiPdb:
@@ -353,9 +354,12 @@ class GuiPdb:
             factory = DbgComFactory(self.guiactions)
             self.listen = reactor.listenUNIX(self.tempfilename, factory)
             
+            # TODO I should probably use guiactions.new_program here
             abs_epdb_path = self.find_executable('epdb')
             reactor.spawnProcess(self.dbgprocess, abs_epdb_path,
                 ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
+            config.save_program_access(os.path.abspath(self.filename))
+            self.edit_window.startpage.update_programs()
 
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
