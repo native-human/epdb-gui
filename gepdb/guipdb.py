@@ -236,7 +236,7 @@ class GuiPdb:
         
         if len(args) > 0:
             self.filename = args[0]
-            self.parameters = " ".join(args[1:])
+            self.parameters = list(args[1:])
         else:
             self.filename = None
             
@@ -348,7 +348,6 @@ class GuiPdb:
         self.toplevelbox.show()
         
         if len(args) > 0:
-            #self.debuggercom.new_debuggee(self.filename, self.parameters)
             self.dbgprocess = DbgProcessProtocol(self.guiactions)
             self.tempfilename = tempfile.mktemp(dir=self.tempdir)
             factory = DbgComFactory(self.guiactions)
@@ -357,7 +356,8 @@ class GuiPdb:
             # TODO I should probably use guiactions.new_program here
             abs_epdb_path = self.find_executable('epdb')
             reactor.spawnProcess(self.dbgprocess, abs_epdb_path,
-                ["epdb", "--uds", self.tempfilename, self.filename], usePTY=True)
+                ["epdb", "--uds", self.tempfilename, self.filename] + self.parameters,
+                usePTY=True)
             config.save_program_access(os.path.abspath(self.filename))
             self.edit_window.startpage.update_programs()
 

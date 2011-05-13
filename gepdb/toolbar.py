@@ -1,6 +1,7 @@
 import pygtk
 pygtk.require('2.0')
 import gtk
+import shlex
 
 class Toolbar(gtk.HBox):
     def __init__(self, dbgcom, guiactions):
@@ -93,8 +94,7 @@ class Toolbar(gtk.HBox):
             dlglbl.show()
             answer = dialog.run()
             if answer == 1:
-                # TODO split parameters correctly, i.e. also consider " and '
-                self.parameters = dlgentry.get_text().split() 
+                self.parameters = shlex.split(dlgentry.get_text()) 
                 self.guiactions.new_program(self.guiactions.window.filename, self.parameters)
             dialog.destroy()
         else:
