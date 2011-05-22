@@ -4,6 +4,10 @@ from twisted.protocols import basic
 import re
 import subprocess as sp
 
+class NullGuiAction:
+    def getattr(self):
+        pass
+
 class DbgComProtocol(basic.LineReceiver):
     "Communication with epdb over Unix Domain Sockets"
     def connectionMade(self):
@@ -67,10 +71,13 @@ class DbgComProtocol(basic.LineReceiver):
             bpid = args
             self.guiactions.new_active_timeline(args)
         elif cmd == "debugmessage":
+            print "debugmessage", args
             message = args
             self.guiactions.append_debug(message.rstrip()+"\n")
+        elif cmd == "stopped":
+            self.guiactions.stopped()
         else:
-            print "other cmd: ", cmd, args
+            print "other cmd: ", repr(cmd), repr(args)
     
     def connectionLost(self, reason):
         pass
@@ -118,15 +125,6 @@ class DbgComChooser:
         if not self._dbgcom:
             return
         return self._dbgcom.quit()
-    
-    def new_debuggee(self, filename, parameters):
-        
-        if self.p:
-            self.quit()
-        # TODO split parameters
-        self.p = sp.Popen(["python3",
-                           "/usr/lib/python3.1/dist-packages/epdb.py", "--uds",
-                           '/tmp/dbgcom', filename, parameters], stdout=sp.PIPE)
     
     def __getattr__(self, name):
         return getattr(self._dbgcom, name)

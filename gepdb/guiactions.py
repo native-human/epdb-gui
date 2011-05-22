@@ -169,3 +169,6 @@ class GuiActions:
     def start_page(self):
         "View a start page in the main notebook"
         self.window.edit_window.start_page()
+
+    def stopped(self):
+        self.window.toolbar.stopped()

@@ -27,6 +27,10 @@ class Toolbar(gtk.HBox):
         self.restart.connect("clicked", self.restart_click, None)
         self.show_breaks = gtk.Button("show_breaks")
         self.show_breaks.connect("clicked", self.show_break_click, None)
+        
+        self.runninglbl =  gtk.Label("running")
+        self.runninglbl.set_markup('<span color="red">running</span>')
+        
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
         self.pack_start(self.rstep, False, False, 0)
@@ -35,6 +39,9 @@ class Toolbar(gtk.HBox):
         self.pack_start(self.cont, False, False, 0)
         self.pack_start(self.snapshot, False, False, 0)
         self.pack_start(self.restart, False, False, 0)
+        self.pack_start(self.runninglbl, False, False, 0)
+        
+        self.runninglbl.show()
         self.step.show()
         self.next.show()
         self.rnext.show()
@@ -100,22 +107,34 @@ class Toolbar(gtk.HBox):
         else:
             "TODO error message"
 
+    def stopped(self):
+        self.runninglbl.set_markup('<span color="red">stopped</span>')
+    
+    def running(self):
+        self.runninglbl.set_markup('<span color="red">running</span>')
+
     def show_break_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine('show_break')
 
     def next_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine("next")
 
     def rnext_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine('rnext')
 
     def continue_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine("continue")
         
     def rcontinue_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine("rcontinue")
     
     def step_click(self, widget, data=None):
+        self.running()
         self.dbgcom.sendLine('step')
         
     def snapshot_click(self, widget, data=None):

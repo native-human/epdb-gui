@@ -250,9 +250,6 @@ class GuiPdb:
         self.pixbuf_loader.connect("area-updated", self.pixbuf_loaded)
         self.pixbuf_loader.write(pkgutil.get_data("gepdb", "bug.png"))
         self.pixbuf_loader.set_size(64, 64)
-        #TODO don't sleep, but connect with the area-prepared signal and do the
-        #     image stuff
-        #time.sleep(0.1)
         
         uimanager = gtk.UIManager()
         self.uimanager = uimanager
