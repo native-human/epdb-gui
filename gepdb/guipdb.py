@@ -282,25 +282,20 @@ class GuiPdb:
         
         self.toplevelbox = gtk.VBox()
         self.toplevelhpaned1 = gtk.HPaned()
-        self.toplevelhpaned2 = gtk.HPaned()
-        self.leftbox = gtk.VBox()
-        self.lbvpane = gtk.VPaned()
+        #self.toplevelhpaned2 = gtk.HPaned()
+        
         self.timelinebox = TimelineBox(self.debuggercom, self.guiactions)
         self.varbox = Varbox(self.debuggercom, self.guiactions)
-        self.resourcebox = ResourceBox(self.debuggercom)
-        self.leftbox.show()
-        self.leftbox.pack_start(self.lbvpane, True, True, 0)
-        self.lbvpane.pack1(self.timelinebox)
-        self.lbvpane.pack2(self.varbox)
-        self.lbvpane.show()
-        self.rightbox = gtk.VBox()
         self.snapshotbox = SnapshotBox(self.debuggercom)
-        self.rbvpane = gtk.VPaned()
-        self.rbvpane.pack1(self.resourcebox, resize=True, shrink=True)
-        self.rbvpane.pack2(self.snapshotbox, resize=True, shrink=True)
-        self.rbvpane.show()
-        self.rightbox.pack_start(self.rbvpane)
-        self.rightbox.show()
+        self.resourcebox = ResourceBox(self.debuggercom)
+        
+        self.leftnotebook = gtk.Notebook()
+        self.leftnotebook.set_tab_pos(gtk.POS_TOP)
+        self.leftnotebook.show()
+        self.leftnotebook.append_page(self.timelinebox, gtk.Label('T'))
+        self.leftnotebook.append_page(self.varbox, gtk.Label('V'))
+        self.leftnotebook.append_page(self.snapshotbox, gtk.Label('S'))
+        self.leftnotebook.append_page(self.resourcebox, gtk.Label('R'))
         
         self.mainbox = gtk.VBox()
         self.edit_window = EditWindow(self.guiactions, self.debuggercom)
@@ -316,10 +311,8 @@ class GuiPdb:
         self.outputbox = OutputBox(self.guiactions)
         self.vpaned.pack2(self.outputbox, resize=False, shrink=False)
         
-        self.toplevelhpaned1.pack1(self.leftbox, resize=False, shrink=False)
+        self.toplevelhpaned1.pack1(self.leftnotebook, resize=False, shrink=False)
         self.toplevelhpaned1.pack2(self.mainbox, resize=True, shrink=True)
-        self.toplevelhpaned2.pack1(self.toplevelhpaned1, resize=True, shrink=True)
-        self.toplevelhpaned2.pack2(self.rightbox, resize=False, shrink=False)
         
         self.toolbar = Toolbar(self.debuggercom, self.guiactions)
         
@@ -331,7 +324,7 @@ class GuiPdb:
 
 
         self.toplevelbox.pack_start(self.toolbar, False, False, 0)
-        self.toplevelbox.pack_start(self.toplevelhpaned2, True, True, 0)
+        self.toplevelbox.pack_start(self.toplevelhpaned1, True, True, 0)
         self.toplevelbox.pack_start(self.statusbar, False, False, 0)
         
         self.window.add(self.toplevelbox)
@@ -339,7 +332,6 @@ class GuiPdb:
         self.mainbox.show()
         
         self.toplevelhpaned1.show()
-        self.toplevelhpaned2.show()
 
         self.vpaned.show()
         self.toplevelbox.show()
@@ -360,10 +352,7 @@ class GuiPdb:
 
         if not self.debuggercom.is_active():
             self.toolbar.deactivate()
-        
-        
-        self.lbvpane_expose_handlerid = self.lbvpane.connect('expose-event', self.lbvpane_expose)
-    
+
     def main(self):
         #try:
         reactor.run()
