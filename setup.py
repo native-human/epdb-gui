@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup
 
 setup(name='gepdb',
-      version='0.1',
+      version='0.1rc1',
       description='Graphical user interface for epdb',
       author='Patrick Sabin',
       package_data = {
