@@ -99,8 +99,6 @@ class StartPage(gtk.HBox):
     
     def on_treeview_activated(self, treeview, row, col):
         model = treeview.get_model()
-        print "treeview activated", row, col
-        #model[row][col]
         if len(row) == 2 and model[row[0]][0] == 'Recently used programs':
             print "Activate", model[row][0]
             self.guiactions.new_program(model[row][0])
