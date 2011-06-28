@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(name='gepdb',
-      version='0.1rc1',
+      version='0.2dev',
       description='Graphical user interface for epdb',
       author='Patrick Sabin',
       package_data = {
