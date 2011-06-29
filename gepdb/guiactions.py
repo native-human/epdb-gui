@@ -173,3 +173,6 @@ class GuiActions:
 
     def stopped(self):
         self.window.toolbar.stopped()
+
+    def finished(self):
+        self.window.toolbar.finished()

@@ -76,7 +76,11 @@ class DbgComProtocol(basic.LineReceiver):
             message = args
             self.guiactions.append_debug(message.rstrip()+"\n")
         elif cmd == "stopped":
+            print "stopped received"
             self.guiactions.stopped()
+        elif cmd == "finished":
+            print("finished received")
+            self.guiactions.finished()
         else:
             print "other cmd: ", repr(cmd), repr(args)
     

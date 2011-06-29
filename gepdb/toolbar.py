@@ -28,8 +28,8 @@ class Toolbar(gtk.HBox):
         self.show_breaks = gtk.Button("show_breaks")
         self.show_breaks.connect("clicked", self.show_break_click, None)
         
-        self.runninglbl =  gtk.Label("running")
-        self.runninglbl.set_markup('<span color="red">running</span>')
+        self.runninglbl =  gtk.Label("")
+        self.runninglbl.set_markup('')
         
         self.pack_start(self.rcontinue, False, False, 0)
         self.pack_start(self.rnext, False, False, 0)
@@ -112,6 +112,9 @@ class Toolbar(gtk.HBox):
     
     def running(self):
         self.runninglbl.set_markup('<span color="red">running</span>')
+
+    def finished(self):
+        self.runninglbl.set_markup('<span color="red">finished</span>')
 
     def show_break_click(self, widget, data=None):
         self.running()
