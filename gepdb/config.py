@@ -28,6 +28,16 @@ if not os.path.exists(CONFIG_FULL_NAME):
 else:
     conn = sqlite3.connect(CONFIG_FULL_NAME)
 
+def delete_program(filename):
+    with conn:
+        conn.execute("delete from recently_used_programs "
+                           "where filename = ?", (filename,))
+
+def delete_file(filename):
+    with conn:
+        conn.execute("delete from recently_used_files "
+                           "where filename = ?", (filename,))
+
 def save_program_access(filename, now=None):
     """Save access to a program to the configuration file"""
     with conn:

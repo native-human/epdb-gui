@@ -71,6 +71,15 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.show()
     
 class StartPage(gtk.HBox):
+    menu = """
+        <popup name="StartPageFilePopupMenu">
+            <menuitem action="FileDelete"/>
+        </popup>
+        <popup name="StartPageProjectPopupMenu">
+            <menuitem action="ProjectDelete"/>
+        </popup>
+        """
+
     def __init__(self, guiactions, dbgcom):
         gtk.HBox.__init__(self)
         self.dbgcom = dbgcom
@@ -92,11 +101,57 @@ class StartPage(gtk.HBox):
         self.column1.pack_start(self.cellrenderer, True)
         self.column1.add_attribute(self.cellrenderer, 'text', 0)
 
-
         self.treeview.set_headers_visible(False)
         self.pack_start(self.treeview, True, True)
+
+        uimanager = gtk.UIManager()
+        self.uimanager = uimanager
+        self.actiongroup = actiongroup = gtk.ActionGroup('UIManagerStartpage')
+        actiongroup.add_actions([
+                ('FileDelete', None, '_Delete', None, "Delete entry", self.file_delete_entry),
+                ('ProjectDelete', None, '_Delete', None, "Delete", self.program_delete_entry)
+            ])
+        uimanager.insert_action_group(actiongroup, 0)
+        uimanager.add_ui_from_string(self.menu)
+        self.file_popup = uimanager.get_widget('/StartPageFilePopupMenu')
+        self.program_popup = uimanager.get_widget('/StartPageProjectPopupMenu')
+        self.treeview.connect("button-press-event", self.on_treeview_button_press_event)
+        self.active_program = None
         self.show()
     
+    def file_delete_entry(self, widget, data=None):
+        config.delete_file(self.active_program)
+        self.update_files()
+
+    def program_delete_entry(self, widget, data=None):
+        config.delete_program(self.active_program)
+        self.update_programs()
+
+    def on_treeview_button_press_event(self, treeview, event):
+        if event.button == 3:
+            x = int(event.x)
+            y = int(event.y)
+            time = event.time
+            pthinfo = treeview.get_path_at_pos(x, y)
+            if pthinfo is None:
+                return True
+            path, col, cellx, celly = pthinfo
+            treeview.grab_focus()
+            treeview.set_cursor(path, col, 0)
+            if len(path) < 2:
+                return True
+
+            model = treeview.get_model()
+
+            # Not too happy with using a attribute as a parameter, but I
+            # couldn't figure out a way, to send an argument to the function.
+            self.active_program = model[path][0]
+            if path[0] == 0:
+                self.program_popup.popup(None, None, None, event.button, time)
+            elif path[0] == 1:
+                self.file_popup.popup(None, None, None, event.button, time)
+            return True
+
     def on_treeview_activated(self, treeview, row, col):
         model = treeview.get_model()
         if len(row) == 2 and model[row[0]][0] == 'Recently used programs':
@@ -104,7 +159,7 @@ class StartPage(gtk.HBox):
             self.guiactions.new_program(model[row][0])
         if len(row) == 2 and model[row[0]][0] == 'Recently used files':
             self.guiactions.open_file(model[row][0])
-            
+
     def update_programs(self):
         # count number of children
         count = 0
@@ -112,11 +167,11 @@ class StartPage(gtk.HBox):
         while iter:
             count += 1
             iter = self.treestore.iter_next(iter)
-        
+
         # Get all the filenames and insert into the treestore
         for filename, date in config.get_latest_programs():
             self.treestore.append(self.recently_used_programs, [filename, date])
-        
+
         # Remove old entries
         iter = self.treestore.iter_children(self.recently_used_programs)
         while self.treestore.iter_is_valid(iter) and count > 0:
@@ -175,7 +230,7 @@ class DebugPage(gtk.HBox):
         uimanager = self.uimanager = gtk.UIManager()
         #accelgroup = uimanager.get_accel_group()
         #self.window.add_accel_group(accelgroup)
-        self.actiongroup = actiongroup = gtk.ActionGroup('UIManagerExample')
+        self.actiongroup = actiongroup = gtk.ActionGroup('UIManagerBreakpoint')
         actiongroup.add_actions([
                 ('Breakpoint', None, '_Breakpoint', None, "Toggle Breakpoint", self.toggle_breakpoint)
             ])

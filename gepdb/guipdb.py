@@ -110,7 +110,6 @@ class GuiPdb:
             chooser.destroy()
         
         chooser = gtk.FileChooserDialog(title=None, action=gtk.FILE_CHOOSER_ACTION_OPEN)
-        #chooser.set_current_folder("/home/patrick/myprogs/gui")
         chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
         okbutton.connect("clicked", chooser_ok)
@@ -134,7 +133,6 @@ class GuiPdb:
             chooser.destroy()
             
         chooser = gtk.FileChooserDialog(title=None, action=gtk.FILE_CHOOSER_ACTION_OPEN)
-        #chooser.set_current_folder("/home/patrick/myprogs/gui")
         chooser.connect("file-activated", chooser_ok)
         okbutton = gtk.Button(stock=gtk.STOCK_OK)
         okbutton.connect("clicked", chooser_ok)
