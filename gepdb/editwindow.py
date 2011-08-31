@@ -155,7 +155,6 @@ class StartPage(gtk.HBox):
     def on_treeview_activated(self, treeview, row, col):
         model = treeview.get_model()
         if len(row) == 2 and model[row[0]][0] == 'Recently used programs':
-            print "Activate", model[row][0]
             self.guiactions.new_program(model[row][0])
         if len(row) == 2 and model[row[0]][0] == 'Recently used files':
             self.guiactions.open_file(model[row][0])
@@ -370,7 +369,6 @@ class TabHeader(gtk.HBox):
         self.pack_start(labelbutton, False, False, 0)
     
     def on_close_click(self, widget, data=None):
-        print "Close clicked"
         if self.closefunc:
             self.closefunc()
             

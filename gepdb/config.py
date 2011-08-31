@@ -14,7 +14,6 @@ conn = None
 if not os.path.exists(CONFIG_FULL_NAME):
     conn = sqlite3.connect(CONFIG_FULL_NAME,
                 detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
-    print "Create table"
     with conn:
         # Create table
         conn.execute('''create table recently_used_programs

@@ -59,14 +59,11 @@ class GuiPdb:
     """
 
     def delete_event(self, widget, event, data=None):
-        print "delete event occurred"
         return False  # False means window get destroyed
 
     def destroy(self, widget, data=None):
-        print "destroy signal occurred"
         self.debuggercom.quit()
         gtk.main_quit()
-        print "Stop reactor"
         reactor.stop()
 
     def append_output(self, txt):

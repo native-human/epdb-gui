@@ -134,7 +134,6 @@ class GuiActions:
     def new_program(self, filename, parameters=[]):
         "Starts a new program for debugging"
         # TODO ask if the user wants to close the running debugging session.
-        print "guiactions.new_program"
         self.window.outputbox.outputbuffer.set_text('')
         self.window.outputbox.debugbuffer.set_text('')
         self.window.edit_window.restart()
