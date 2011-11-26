@@ -23,7 +23,7 @@ class Statusbar(gtk.Statusbar):
         self.timelbl.show()
         
         self.pack_start(self.timelbl, False, False, 0)
-        self.pack_start(self.iclbl, False, False, 0)
+        self.pack_start(self.iclbl, False, False, 20)
         self.pack_start(self.modelbl, False, False, 20)
         self.show()
         
@@ -57,3 +57,4 @@ class Statusbar(gtk.Statusbar):
         self.messagelbl.modify_font(font_desc)
         self.iclbl.modify_font(font_desc)
         self.modelbl.modify_font(font_desc)
+        self.timelbl.modify_font(font_desc)

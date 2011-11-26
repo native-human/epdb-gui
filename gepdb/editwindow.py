@@ -201,6 +201,9 @@ class StartPage(gtk.HBox):
         """This is needed for the other pages. The Start Page doesn't change
         because of an reset"""
 
+    def modify_font(self, font_desc):
+        pass
+
 
 class DebugPage(gtk.HBox):
     def __init__(self, dbgcom, filename, bp_collection):
@@ -338,21 +341,23 @@ class DebugPage(gtk.HBox):
             
             print "Clear Breakpoint {0}".format(bp.id)
             self.dbgcom.sendLine('clear {0}\n'.format(bp.id))
-    
+
     def reset(self):
         "Resets all breakpoints"
         #self.breakpointdict = {}
         start = self.textbuffer.get_start_iter()
         end = self.textbuffer.get_end_iter()
         self.textbuffer.remove_source_marks(start, end, category=None)
-        
+
+    def modify_font(self, font_desc):
+        self.text.modify_font(font_desc)
 
 class TabHeader(gtk.HBox):
     def __init__(self, name, closefunc=None):
         gtk.HBox.__init__(self)
         self.closefunc = closefunc
         self.show()
-        label = gtk.Label(os.path.basename(name))
+        self.label = label = gtk.Label(os.path.basename(name))
         label.set_tooltip_text(name)
         label.show()
         labelbutton = gtk.Button()
@@ -371,6 +376,9 @@ class TabHeader(gtk.HBox):
     def on_close_click(self, widget, data=None):
         if self.closefunc:
             self.closefunc()
+
+    def modify_font(self, font_desc):
+        self.label.modify_font(font_desc)
             
 class EditWindow(gtk.Notebook):
     def __init__(self, guiactions, dbgcom, *filenames):
@@ -463,6 +471,12 @@ class EditWindow(gtk.Notebook):
             page.show_line(lineno)
             self.activepage = page
             self.activepage.highlight()
+
+    def modify_font(self, font_desc):
+        for page in self.content_dict.values():
+            page.modify_font(font_desc)
+        for lbl in self.label_dict.values():
+            lbl.modify_font(font_desc)
 
     def restart(self):
         "clear all breakpoints in all files for this debuggee"

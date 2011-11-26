@@ -60,7 +60,9 @@ class Toolbar(gtk.HBox):
         self.rcontinue.child.modify_font(font)
         self.rstep.child.modify_font(font)
         self.rnext.child.modify_font(font)
+        self.snapshot.child.modify_font(font)
         self.restart.child.modify_font(font)
+        self.runninglbl.modify_font(font)
 
     def activate(self):
         self.next.set_sensitive(True)

@@ -181,7 +181,7 @@ class GuiPdb:
         if self.window:
             font_desc = pango.FontDescription(self.font)
             if font_desc:
-                self.text.modify_font(font_desc)
+                self.edit_window.modify_font(font_desc)
                 #self.debug.modify_font(font_desc)
                 self.varbox.modify_font(font_desc)
                 self.timelinebox.modify_font(font_desc)
@@ -190,6 +190,10 @@ class GuiPdb:
                 self.snapshotbox.modify_font(font_desc)
                 self.outputbox.modify_font(font_desc)
                 self.statusbar.modify_font(font_desc)
+                self.timelinelbl.modify_font(font_desc)
+                self.varboxlbl.modify_font(font_desc)
+                self.snapshotlbl.modify_font(font_desc)
+                self.resourcelbl.modify_font(font_desc)
                 
                 change_menu_font(self.menubar, font_desc)
                 #self.menubar.modify_font(font_desc)
