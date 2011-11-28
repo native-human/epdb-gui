@@ -9,8 +9,8 @@ class SnapshotBox(gtk.VBox):
 
         self.treestore = gtk.TreeStore(str, str)
         self.var_renderer = gtk.CellRendererText()
-        self.lbl = gtk.Label('Snapshots')
-        self.lbl.show()
+        #self.lbl = gtk.Label('Snapshots')
+        #self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(True)
         
@@ -40,7 +40,7 @@ class SnapshotBox(gtk.VBox):
         self.treeview.connect("row-activated", self.on_treeview_activated)
         
         #self.pack_start(self.timelinebox, False, False, 0)
-        self.pack_start(self.lbl, False, False, 0)
+        #self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.scrolledwindow, True, True, 0)
         self.show()
 
@@ -58,7 +58,7 @@ class SnapshotBox(gtk.VBox):
     
     def modify_font(self, font_desc):
         self.treeview.modify_font(font_desc)
-        self.lbl.modify_font(font_desc)
+        #self.lbl.modify_font(font_desc)
         self.idlbl.modify_font(font_desc)
         self.iclbl.modify_font(font_desc)
     

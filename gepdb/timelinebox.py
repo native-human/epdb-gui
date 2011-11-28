@@ -20,7 +20,7 @@ class TimelineBox(gtk.VBox):
         #
         #self.popup = self.prnt.uimanager.get_widget('/TimelineMenu')
         
-        self.lbl = gtk.Label("Timelines")
+        #self.lbl = gtk.Label("Timelines")
         self.treestore = gtk.TreeStore(gobject.TYPE_STRING, str)
         self.add_timeline('head')
 
@@ -48,13 +48,13 @@ class TimelineBox(gtk.VBox):
         self.timelinebox.show()
         self.entry.show()
         self.addbutton.show()
-        self.lbl.show()
+        #self.lbl.show()
         
         self.tvcolumn = gtk.TreeViewColumn('Column 0', self.timeline_renderer, text=0, background=1)
         self.treeview.append_column(self.tvcolumn)
         
         self.treeview.show()
-        self.pack_start(self.lbl, False, False, 0)
+        #self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.timelinebox, False, False, 0)
         self.pack_start(self.scrolledwindow, True, True, 0)
         self.scrolledwindow.add(self.treeview)
@@ -74,7 +74,7 @@ class TimelineBox(gtk.VBox):
             if pthinfo is not None:
                 path, col, cellx, celly = pthinfo
                 treeview.grab_focus()
-                treeview.set_cursor( path, col, 0)
+                treeview.set_cursor(path, col, 0)
                 # TODO make popup menu to remove breakpoint
                 #self.popup.popup( None, None, None, event.button, time)
             return True
@@ -99,7 +99,7 @@ class TimelineBox(gtk.VBox):
         for e in self.treestore:
             text = e[0]
             if text == name:
-                e[1] = 'green'
+                e[1] = 'blue'
             else:
                 e[1] = 'white'
 
@@ -107,13 +107,14 @@ class TimelineBox(gtk.VBox):
     def add_timeline(self, name):
         for e in self.treestore:
             e[1] = 'white'
-        self.treestore.append(None, (name,'green'))
+        self.treestore.append(None, (name, "#23abff"))
+        print eval(repr(gtk.gdk.Color(red=100, green=0, blue=0)))
     
     def modify_font(self, font_desc):
         self.treeview.modify_font(font_desc)
         self.addbutton.child.modify_font(font_desc)
         self.entry.modify_font(font_desc)
-        self.lbl.modify_font(font_desc)
+        #self.lbl.modify_font(font_desc)
     
     def activate(self):
         self.addbutton.set_sensitive(True)

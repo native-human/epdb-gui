@@ -59,6 +59,9 @@ class ScrolledSourceView(gtk.ScrolledWindow):
         self.languagemanager = gtksourceview2.LanguageManager()
         
         l = self.languagemanager.get_language("python")
+        self.stylemanager = gtksourceview2.StyleSchemeManager()
+        scheme = self.stylemanager.get_scheme('presentation')
+        self.text.set_style(scheme)
         self.textbuffer.set_language(l)
         self.text.set_show_line_marks(True)
         self.text.set_show_line_numbers(True)
@@ -268,7 +271,7 @@ class DebugPage(gtk.HBox):
     def highlight(self):
         #print "highlight", self.filename
         self.active = True
-        self.text.set_highlight_current_line(True)
+        #self.text.set_highlight_current_line(True)
     
     def set_text(self, text):
         self.textbuffer.set_text(text)
@@ -305,7 +308,8 @@ class DebugPage(gtk.HBox):
             context.rectangle(0, 0, width, height)
             context.clip()
             context.set_line_width(1.0)
-            context.set_source_rgba(1,1,0,.25)
+            context.set_source_rgba(0.43671875,0.26796875,0.99609375,1 )
+            "#439bff"
             context.rectangle(0,y1-visible_rect.y, width, y2)
             context.fill()
 

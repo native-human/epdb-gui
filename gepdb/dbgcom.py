@@ -41,7 +41,11 @@ class DbgComProtocol(basic.LineReceiver):
         elif cmd == "clear_stdout":
             self.guiactions.set_output_text('')
         elif cmd == "add_stdout_line":
-            self.guiactions.append_output(args)
+            if args != '\r':
+                self.guiactions.append_output(args)
+            #print repr(args)
+            # TODO on print I get every character in a separate message
+            # This shouldn't happen
         elif cmd == "newtimeline successful":
             self.guiactions.add_timeline(args)
         elif cmd == "list_timeline_snapshots":

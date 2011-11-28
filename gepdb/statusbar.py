@@ -20,7 +20,7 @@ class Statusbar(gtk.Statusbar):
         
         self.timelbl = gtk.Label("Time Label")
         self.timelbl.set_markup('Time: 0s')
-        self.timelbl.show()
+        #self.timelbl.show()
         
         self.pack_start(self.timelbl, False, False, 0)
         self.pack_start(self.iclbl, False, False, 20)

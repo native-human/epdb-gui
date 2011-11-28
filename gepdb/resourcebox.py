@@ -9,8 +9,8 @@ class ResourceBox(gtk.VBox):
 
         self.treestore = gtk.TreeStore(str, str)
         self.var_renderer = gtk.CellRendererText()
-        self.lbl = gtk.Label('Resources')
-        self.lbl.show()
+        #self.lbl = gtk.Label('Resources')
+        #self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         
@@ -26,7 +26,7 @@ class ResourceBox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn1)
         self.treeview.append_column(self.tvcolumn2)
         
-        self.pack_start(self.lbl, False, False, 0)
+        #self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.scrolledwindow, True, True, 0)
         self.scrolledwindow.add(self.treeview)
         self.iter_dict = {}
@@ -57,4 +57,3 @@ class ResourceBox(gtk.VBox):
         
     def modify_font(self, font_desc):
         self.treeview.modify_font(font_desc)
-        self.lbl.modify_font(font_desc)        

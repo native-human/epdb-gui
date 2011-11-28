@@ -12,13 +12,13 @@ class Varbox(gtk.VBox):
  
         self.var_renderer = gtk.CellRendererText()
         #self.timeline_renderer.set_property('background', 'red')
-        self.lbl = gtk.Label('Variables')
+        #self.lbl = gtk.Label('Variables')
         
         self.scrolledwindow = gtk.ScrolledWindow()
         self.scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.scrolledwindow.show()
         
-        self.lbl.show()
+        #self.lbl.show()
         self.treeview = gtk.TreeView(self.treestore)
         self.treeview.set_headers_visible(False)
         self.entrybox = gtk.HBox()
@@ -42,7 +42,7 @@ class Varbox(gtk.VBox):
         self.treeview.append_column(self.tvcolumn2)
         
         #self.pack_start(self.timelinebox, False, False, 0)
-        self.pack_start(self.lbl, False, False, 0)
+        #self.pack_start(self.lbl, False, False, 0)
         self.pack_start(self.entrybox, False, False, 0)
         self.pack_start(self.scrolledwindow, True, True, 0)
         self.scrolledwindow.add(self.treeview)
@@ -87,7 +87,7 @@ class Varbox(gtk.VBox):
         self.treeview.modify_font(font_desc)
         self.entry.modify_font(font_desc)
         self.addbutton.child.modify_font(font_desc)
-        self.lbl.modify_font(font_desc)
+        #self.lbl.modify_font(font_desc)
 
     def deactivate(self):
         self.entry.set_sensitive(False)

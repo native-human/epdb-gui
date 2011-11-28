@@ -191,7 +191,7 @@ class GuiPdb:
                 self.outputbox.modify_font(font_desc)
                 self.statusbar.modify_font(font_desc)
                 self.timelinelbl.modify_font(font_desc)
-                self.varboxlbl.modify_font(font_desc)
+                self.varlbl.modify_font(font_desc)
                 self.snapshotlbl.modify_font(font_desc)
                 self.resourcelbl.modify_font(font_desc)
                 
@@ -224,6 +224,13 @@ class GuiPdb:
         
         return None
     
+    def toggle_visibility(self, widget, event, box):
+        if box.flags() & gtk.VISIBLE:
+            box.hide()
+        else:
+            box.show()
+        return
+
     def __init__(self, *args):
         self.reactor = reactor
         self.tempdir = tempfile.mkdtemp()
@@ -288,23 +295,68 @@ class GuiPdb:
         self.snapshotbox = SnapshotBox(self.debuggercom)
         self.resourcebox = ResourceBox(self.debuggercom)
         
-        self.leftnotebook = gtk.Notebook()
-        self.leftnotebook.set_tab_pos(gtk.POS_TOP)
-        self.leftnotebook.show()
+        self.switcher = gtk.VBox()
+        self.timelinefrm = gtk.Frame()
+        self.timelinelbl = gtk.Label('Timeline')
+        self.timelineev = gtk.EventBox()
+        self.timelineev.set_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.timelineev.connect("button_press_event", self.toggle_visibility, self.timelinebox)
+        self.timelineev.show()
+        self.timelineev.add(self.timelinelbl)
+        self.timelinefrm.add(self.timelineev)
+        self.timelinefrm.set_property("shadow-type", gtk.SHADOW_OUT)
+        self.timelinefrm.show()
 
-        self.timelinelbl = gtk.Label('T')
-        self.timelinelbl.set_tooltip_text("Timeline")
-        self.varboxlbl = gtk.Label('V')
-        self.varboxlbl.set_tooltip_text("Varbox")
-        self.snapshotlbl = gtk.Label('S')
-        self.snapshotlbl.set_tooltip_text("Snapshots")
-        self.resourcelbl = gtk.Label('R')
-        self.resourcelbl.set_tooltip_text("Resources")
-        self.leftnotebook.append_page(self.timelinebox, self.timelinelbl)
-        self.leftnotebook.append_page(self.varbox, self.varboxlbl)
-        self.leftnotebook.append_page(self.snapshotbox, self.snapshotlbl)
-        self.leftnotebook.append_page(self.resourcebox, self.resourcelbl)
+        self.varlbl = gtk.Label('Variables')
+        self.varev = gtk.EventBox()
+        self.varev.set_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.varev.connect("button_press_event", self.toggle_visibility, self.varbox)
+        self.varev.show()
+        self.varfrm = gtk.Frame()
+        self.varfrm.add(self.varev)
+        self.varfrm.set_property("shadow-type", gtk.SHADOW_OUT)
+        self.varev.add(self.varlbl)
+        self.varfrm.show()
+
+        self.snapshotlbl = gtk.Label('Snapshot')
+        self.snapshotev = gtk.EventBox()
+        self.snapshotev.set_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.snapshotev.connect("button_press_event", self.toggle_visibility, self.snapshotbox)
+        self.snapshotev.show()
+        self.snapshotev.add(self.snapshotlbl)
+        self.snapshotfrm = gtk.Frame()
+        self.snapshotfrm.set_property("shadow-type", gtk.SHADOW_OUT)
+        self.snapshotfrm.add(self.snapshotev)
+        self.snapshotfrm.show()
         
+        self.resourcelbl = gtk.Label('Resources')
+        self.resourceev = gtk.EventBox()
+        self.resourceev.set_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self.resourceev.connect("button_press_event", self.toggle_visibility, self.resourcebox)
+        self.resourceev.show()
+        self.resourceev.add(self.resourcelbl)
+        self.resourcefrm = gtk.Frame()
+        self.resourcefrm.set_property("shadow-type", gtk.SHADOW_OUT)
+        self.resourcefrm.add(self.resourceev)
+        self.resourcefrm.show()
+
+        self.timelinelbl.show()
+        self.varlbl.show()
+        self.snapshotlbl.show()
+        self.resourcelbl.show()
+        self.switcher.pack_start(self.timelinefrm, False, False, 0)
+        self.switcher.pack_start(self.timelinebox, True, True, 0)
+        self.switcher.pack_start(self.varfrm, False, False, 0)
+        self.switcher.pack_start(self.varbox, True, True, 0)
+        self.switcher.pack_start(self.snapshotfrm, False, False, 0)
+        self.switcher.pack_start(self.snapshotbox, True, True, 0)
+        self.switcher.pack_start(self.resourcefrm, False, False, 0)
+        self.switcher.pack_start(self.resourcebox, True, True, 0)
+        frm = gtk.Frame()
+        frm.show()
+        self.switcher.pack_start(frm, True, True, 0)
+        self.switcher.show()
+
         self.mainbox = gtk.VBox()
         self.edit_window = EditWindow(self.guiactions, self.debuggercom)
         self.edit_window.show()
@@ -318,8 +370,9 @@ class GuiPdb:
         self.vpaned.pack1(self.edit_window, resize=True, shrink=True)
         self.outputbox = OutputBox(self.guiactions)
         self.vpaned.pack2(self.outputbox, resize=False, shrink=False)
-        
-        self.toplevelhpaned1.pack1(self.leftnotebook, resize=False, shrink=False)
+
+        #self.toplevelhpaned1.pack1(self.leftnotebook, resize=False, shrink=False)
+        self.toplevelhpaned1.pack1(self.switcher, resize=False, shrink=False)
         self.toplevelhpaned1.pack2(self.mainbox, resize=True, shrink=True)
         
         self.toolbar = Toolbar(self.debuggercom, self.guiactions)
